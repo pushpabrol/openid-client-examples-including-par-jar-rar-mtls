@@ -29,8 +29,6 @@ const response = await client.pushedAuthorizationRequest({
 
 console.log(response);
 
-
-
 const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
 
 (async () => {
