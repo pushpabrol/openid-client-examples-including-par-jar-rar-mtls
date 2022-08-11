@@ -1,6 +1,5 @@
 import dotenv from 'dotenv'
 dotenv.config()
-
 import  open from "open";
 import { Issuer, generators } from 'openid-client';
 
@@ -17,32 +16,42 @@ const client = new auth0Issuer.Client({
 
 });
 
-const response = await client.pushedAuthorizationRequest({
+
+const url = await client.authorizationUrl({
     audience: process.env.AUD,
     scope: `openid ${process.env.AUD_SCOPES}`,
     nonce: "132123",
-    response_type: "token id_token", 
-    "ext-type": "payment_initiation",
-      "ext-actions": "initiate:status:cancel"  ,
-      "ext-locations": "https://example.com/payments",
-      "ext-instructedAmount":"amount:123.50EUR",
-      "ext-debtorAccount":"iban:DE40100100103307118608",
-      "ext-creditorName":"Merchant123",
-      "ext-creditorAccount":"iban:DE02100100109307118603",
-      "ext-remitInfoUnstructured":"Ref Number Merchant"
-    
-
+    response_type: "code"
 });
 
-
-console.log(response);
-
-
-const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
 
 (async () => {
   // Specify app arguments
   await open(url, {app: ['google chrome']});
 
+  const code = await askQuestion("Please enter the code from the response? ");
+  console.log(code);
+
+  const params = {"code" : code};
+  console.log(params);
+
+  const tokenSet = await client.callback(process.env.RWA_REDIRECT_URI, params,{"nonce" : "132123" });
+
+  console.log(tokenSet);
+
+
 })();
+
+
+function askQuestion(query) {
+  const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+  });
+
+  return new Promise(resolve => rl.question(query, ans => {
+      rl.close();
+      resolve(ans);
+  }))
+}
 
