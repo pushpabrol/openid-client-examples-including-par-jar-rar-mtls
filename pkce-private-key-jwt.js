@@ -9,18 +9,18 @@ import pkg from 'node-jose';
 const { JWK } = pkg;
 
 const algorithm = 'RS256'
-var privateKey = process.env.PVT_KEY;
+var privateKey = process.env.PVT_KEY.replace(/\n/g,"\r\n");
 
 
 (async () => {
     try {
-        
+
         var keystore = JWK.createKeyStore();
         await keystore.add(privateKey, "pem");
 
         const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 
-        console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
+        //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
 
 
         const client = new auth0Issuer.Client({
@@ -34,7 +34,6 @@ var privateKey = process.env.PVT_KEY;
         const url = client.authorizationUrl({
             audience: process.env.AUD,
             scope: `openid ${process.env.AUD_SCOPES}`,
-            nonce: "132123",
             response_type: responseType,
             "ext-authz-transfer-amount": "100000",
             "ext-authz-transfer-recipient": "abc"
@@ -51,11 +50,10 @@ var privateKey = process.env.PVT_KEY;
             const params = { "code": code };
             console.log(params);
 
-            const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, { "nonce": "132123" });
+            const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, {});
 
             console.log(tokenSet);
             }
-
 
         })();
 
