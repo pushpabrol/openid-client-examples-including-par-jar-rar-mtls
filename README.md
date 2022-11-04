@@ -17,6 +17,7 @@
 ## Samples
 - Authorization code grant flow
 - CLI Authorization code grant flow
+- Client Credentials with Private Key JWT
 - Device flow
 - Implicit flow
 - PKCE Confidential client

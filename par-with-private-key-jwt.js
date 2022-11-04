@@ -8,7 +8,6 @@ import readline from "readline";
 import pkg from 'node-jose';
 const { JWK } = pkg;
 
-const algorithm = 'RS256'
 var privateKey = process.env.PVT_KEY;
 
 
@@ -20,16 +19,14 @@ var privateKey = process.env.PVT_KEY;
 
         const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 
-        console.log(auth0Issuer);
-        //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
-
-
         const client = new auth0Issuer.Client({
             client_id: process.env.PKJWT_CLIENT_ID,
             token_endpoint_auth_method: 'private_key_jwt',
             redirect_uris: [process.env.PKJWT_REDIRECT_URI]
 
         },keystore.toJSON(true));
+
+        auth0Issuer.log = console;
 
         const responseType = "code";
         const response = await client.pushedAuthorizationRequest({
@@ -46,6 +43,8 @@ var privateKey = process.env.PVT_KEY;
 
         const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.PKJWT_CLIENT_ID}&request_uri=${response.request_uri}`;
 
+        console.log(`Authorize URL: ${url}`);
+
         (async () => {
             // Specify app arguments
             await open(url, { app: ['google chrome'] });
@@ -59,10 +58,7 @@ var privateKey = process.env.PVT_KEY;
 
             console.log(tokenSet);
             }
-
-
         })();
-
 
         function askQuestion(query) {
             const rl = readline.createInterface({

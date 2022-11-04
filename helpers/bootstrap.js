@@ -10,11 +10,14 @@ var mgmtClient = new auth0.ManagementClient({
   domain: process.env.DOMAIN,
   clientId: process.env.MGMT_CLIENT_ID,
   clientSecret: process.env.MGMT_CLIENT_SECRET,
-  scope: 'read:clients create:clients update:clients',
+  scope: 'read:clients create:clients update:clients create:client_grants',
 });
 
 
 var callbackUrl = "https://jwt.io";
+
+var pkjwtClientId = "";
+var resourceIdentifier = "";
 
 
 (async() => {
@@ -26,6 +29,7 @@ var callbackUrl = "https://jwt.io";
          await createSpaClient();
          await createResourceServer();
          await createRegularWebAppClient();
+         await createPkJWTRSClientGrant();
          
         
     } catch (error) {
@@ -58,7 +62,7 @@ async function createPrivateKeyJwtClient(){
       "rotation_type": "non-rotating"
     },
     "callbacks": [
-      "${callbackUrl}"
+      "${callbackUrl}", "http://localhost:3750/resume-transaction"
     ],
     "native_social_login": {
       "apple": {
@@ -100,6 +104,7 @@ async function createPrivateKeyJwtClient(){
     setEnvValue("PVT_KEY", JSON.stringify(pks.privateKey));
     const client = await mgmtClient.createClient(pkJwtClientTemplate);
     console.log(client);
+    pkjwtClientId = client.client_id;
     setEnvValue("PKJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJWT_REDIRECT_URI", callbackUrl);
     
@@ -304,7 +309,21 @@ async function createResourceServer(){
     const rs = await mgmtClient.createResourceServer(resourceServerTemplate)
     console.log(rs);
     setEnvValue("AUD", rs.identifier)
+    resourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
 
 
+}
+
+async function createPkJWTRSClientGrant(){
+
+  
+   const pkjwtClientGrant = await mgmtClient.createClientGrant( {
+    "client_id": pkjwtClientId,
+    "audience": resourceIdentifier,
+    "scope" : ["read:stats", "upload:stats"]
+   });
+
+   console.log(pkjwtClientGrant);
+  
 }
