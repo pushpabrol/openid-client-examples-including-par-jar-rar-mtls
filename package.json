@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "auth0": "^2.42.0",
+    "auth0": "^3.4.0",
     "body": "^5.1.0",
     "body-parser": "^1.20.2",
     "crypto": "^1.0.1",

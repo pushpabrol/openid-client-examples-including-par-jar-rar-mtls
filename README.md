@@ -31,6 +31,10 @@
     - PAR with custom auhtorization example
     - Private Key JWT
 
+### How to test?
+Run your sample using node, example: - `node authz-code.js` or `node par-with-private-key-jwt.js`
+
+### NOTE: Majority of the examples above use https://jwt.io as a callback url to recieve either the token response directly or the intermediate code. If you recieve the `code` on the url, it means you have to copy the code from the browser url and copy it into the command line prompt - `Please enter the code from the response?`
 
 
 
