@@ -8,43 +8,46 @@ import readline from "readline";
 import pkg from 'node-jose';
 const { JWK } = pkg;
 
-var privateKey = process.env.PVT_KEY;
+const algorithm = 'RS256'
+var privateKey = process.env.PVT_KEY.replace(/\n/g,"\r\n");
 
 
 (async () => {
     try {
-        
+
         var keystore = JWK.createKeyStore();
         await keystore.add(privateKey, "pem");
+        const code_verifier = generators.codeVerifier();
+        // store the code_verifier in your framework's session mechanism, if it is a cookie based solution
+        // it should be httpOnly (not readable by javascript) and encrypted.
+
+        const code_challenge = generators.codeChallenge(code_verifier);
+
 
         const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
+
+        //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
+
 
         const client = new auth0Issuer.Client({
             client_id: process.env.PKJWT_CLIENT_ID,
             token_endpoint_auth_method: 'private_key_jwt',
-            redirect_uris: [process.env.PKJWT_REDIRECT_URI],
-            post_logout_redirect_uris : ["https://jwt.io"]
+            redirect_uris: [process.env.PKJWT_REDIRECT_URI]
 
         },keystore.toJSON(true));
 
-        auth0Issuer.log = console;
-
         const responseType = "code";
-        const response = await client.pushedAuthorizationRequest({
+        const url = client.authorizationUrl({
             audience: process.env.AUD,
             scope: `openid ${process.env.AUD_SCOPES}`,
-            nonce: "132123",
             response_type: responseType,
+            code_challenge,
+            code_challenge_method: 'S256',
             "ext-authz-transfer-amount": "100000",
             "ext-authz-transfer-recipient": "abc"
 
         });
 
-        console.log(response);
-
-        const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.PKJWT_CLIENT_ID}&request_uri=${response.request_uri}`;
-
-        console.log(`Authorize URL: ${url}`);
 
         (async () => {
             // Specify app arguments
@@ -55,19 +58,13 @@ var privateKey = process.env.PVT_KEY;
             const params = { "code": code };
             console.log(params);
 
-            const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, { "nonce": "132123" });
+            const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, {"code_verifier": code_verifier });
 
             console.log(tokenSet);
-            
-            var urlLogout = await client.endSessionUrl({
-                post_logout_redirect_uri: 'https://jwt.io',
-                state: 'foo',
-                client_id: process.env.PKJWT_CLIENT_ID
-              });
-
-              await open(urlLogout, { app: ['google chrome'] });
             }
+
         })();
+
 
         function askQuestion(query) {
             const rl = readline.createInterface({

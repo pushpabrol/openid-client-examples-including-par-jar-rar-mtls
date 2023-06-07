@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "auth0": "^2.42.0",
+    "body": "^5.1.0",
+    "body-parser": "^1.20.2",
     "crypto": "^1.0.1",
     "dotenv": "^16.0.1",
     "jose": "^4.8.3",
