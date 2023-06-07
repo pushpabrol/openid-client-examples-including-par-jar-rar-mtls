@@ -58,14 +58,7 @@ var privateKey = process.env.PVT_KEY;
             const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, { "nonce": "132123" });
 
             console.log(tokenSet);
-            
-            var urlLogout = await client.endSessionUrl({
-                post_logout_redirect_uri: 'https://jwt.io',
-                state: 'foo',
-                client_id: process.env.PKJWT_CLIENT_ID
-              });
 
-              await open(urlLogout, { app: ['google chrome'] });
             }
         })();
 
