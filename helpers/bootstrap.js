@@ -13,23 +13,26 @@ var mgmtClient = new auth0.ManagementClient({
   scope: 'read:clients create:clients update:clients create:client_grants',
 });
 
-
+//default
 var callbackUrl = "https://jwt.io";
 
 var pkjwtClientId = "";
 var resourceIdentifier = "";
 
 
+
 (async() => {
     try {
         
          
-         await createPrivateKeyJwtClient();
-         await createNativeClient();
-         await createSpaClient();
-         await createResourceServer();
-         await createRegularWebAppClient();
-         await createPkJWTRSClientGrant();
+        await createPrivateKeyJwtClient();
+        await createNativeClient();
+        await createSpaClient();
+        await createResourceServer();
+        await createRegularWebAppClient();
+        await createPkJWTRSClientGrant();
+        await createJARClientClientSecret();
+        await createJARClientWithPrivateKeyJwtAuth();
          
         
     } catch (error) {
@@ -107,6 +110,157 @@ async function createPrivateKeyJwtClient(){
     pkjwtClientId = client.client_id;
     setEnvValue("PKJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJWT_REDIRECT_URI", callbackUrl);
+    
+
+
+}
+
+async function createJARClientClientSecret(){
+
+  var pks = generateKeyPair();
+
+    var pkJARClientTemplate = `
+{
+    "is_token_endpoint_ip_header_trusted": false,
+    "name": "JAR_CLIENT${random()}",
+    "is_first_party": true,
+    "oidc_conformant": true,
+    "sso_disabled": false,
+    "cross_origin_auth": false,
+    "refresh_token": {
+      "expiration_type": "non-expiring",
+      "leeway": 0,
+      "infinite_token_lifetime": true,
+      "infinite_idle_token_lifetime": true,
+      "token_lifetime": 31557600,
+      "idle_token_lifetime": 2592000,
+      "rotation_type": "non-rotating"
+    },
+    "callbacks": [
+      "${callbackUrl}", "http://localhost:3750/resume-transaction"
+    ],
+    "native_social_login": {
+      "apple": {
+        "enabled": false
+      },
+      "facebook": {
+        "enabled": false
+      }
+    },
+    "jwt_configuration": {
+      "alg": "RS256",
+      "lifetime_in_seconds": 36000,
+      "secret_encoded": false
+    },
+    "client_aliases": [],
+    "app_type": "regular_web",
+    "grant_types": [
+      "authorization_code",
+      "implicit",
+      "refresh_token",
+      "client_credentials"
+    ],
+    "signed_request_object": {
+        "credentials": [
+          {
+            "name": "key_1",
+            "credential_type": "public_key",
+            "pem": ${JSON.stringify(pks.publicKey)}
+          }
+        ]
+    }
+  }
+`;
+
+
+    
+    setEnvValue("JAR_PVT_KEY", JSON.stringify(pks.privateKey));
+    const client = await mgmtClient.createClient(pkJARClientTemplate);
+    console.log(client);
+    setEnvValue("PKJAR_CLIENT_ID", client.client_id)
+    setEnvValue("PKJAR_CLIENT_SECRET", client.client_secret)
+    setEnvValue("PKJAR_REDIRECT_URI", callbackUrl);
+    
+
+
+}
+async function createJARClientWithPrivateKeyJwtAuth(){
+
+  var pksAuth = generateKeyPair();
+
+  var pksSAR = generateKeyPair();
+
+    var pkJwtClientTemplate = `
+{
+    "is_token_endpoint_ip_header_trusted": false,
+    "name": "JARPKJWT_CLIENT${random()}",
+    "is_first_party": true,
+    "oidc_conformant": true,
+    "sso_disabled": false,
+    "cross_origin_auth": false,
+    "refresh_token": {
+      "expiration_type": "non-expiring",
+      "leeway": 0,
+      "infinite_token_lifetime": true,
+      "infinite_idle_token_lifetime": true,
+      "token_lifetime": 31557600,
+      "idle_token_lifetime": 2592000,
+      "rotation_type": "non-rotating"
+    },
+    "callbacks": [
+      "${callbackUrl}", "http://localhost:3750/resume-transaction"
+    ],
+    "native_social_login": {
+      "apple": {
+        "enabled": false
+      },
+      "facebook": {
+        "enabled": false
+      }
+    },
+    "jwt_configuration": {
+      "alg": "RS256",
+      "lifetime_in_seconds": 36000,
+      "secret_encoded": false
+    },
+    "client_aliases": [],
+    "app_type": "regular_web",
+    "grant_types": [
+      "authorization_code",
+      "implicit",
+      "refresh_token",
+      "client_credentials"
+    ],
+    "client_authentication_methods": {
+      "private_key_jwt": {
+        "credentials": [
+          {
+            "name": "keyAuth",
+            "credential_type": "public_key",
+            "pem": ${JSON.stringify(pksAuth.publicKey)}
+          }
+        ]
+      }
+    },
+    "signed_request_object": {
+        "credentials": [
+          {
+            "name": "keySAR",
+            "credential_type": "public_key",
+            "pem": ${JSON.stringify(pksSAR.publicKey)}
+          }
+        ]
+    }
+  }
+`;
+
+    
+    setEnvValue("FORJAR_TEAUTH_PVT_KEY", JSON.stringify(pksAuth.privateKey));
+    setEnvValue("FORJAR_SAR_PVT_KEY", JSON.stringify(pksSAR.privateKey));
+    const client = await mgmtClient.createClient(pkJwtClientTemplate);
+    console.log(client);
+    setEnvValue("PKJARJWT_CLIENT_ID", client.client_id)
+    setEnvValue("PKJARJWT_REDIRECT_URI", callbackUrl);
     
 
 
@@ -290,6 +444,7 @@ async function createResourceServer(){
     "identifier": "urn:my:api:${random()}",
     "token_lifetime": 86400,
     "token_lifetime_for_web": 7200,
+    "skip_consent_for_verifiable_first_party_clients": true,
     "signing_alg": "RS256",
     "scopes": [
       {

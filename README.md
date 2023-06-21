@@ -13,17 +13,14 @@
 - Run `node helpers/bootstrap.js`
     - this will create the required applications and resource servers for the rest of the samples
 - NOTE: You only have to run the bootstrap once as it sets all the required data within the .env file
+- NOTE: Make sure the correct connections are enabled at each application you created. To enable or disable connections go to the auth0 management console and edit.
 
 ## Samples
 - Authorization code grant flow
-- CLI Authorization code grant flow
-- Client Credentials with Private Key JWT
-- Device flow
-- Implicit flow
-- PKCE Confidential client
-- PKCE Non Confidential client
-- PKCE Private Key JWT
-- PAR
+- Client Credentials
+- Device Flow
+- PKCE
+- PAR & PAR with RAR
     - Authorization code grant flow
     - Implicit flow
     - public client ( not supported)
@@ -31,10 +28,18 @@
     - PAR with custom auhtorization example
     - Private Key JWT
 
+- JAR
+- IMPLICIT
+
+
 ### How to test?
-Run your sample using node, example: - `node authz-code.js` or `node par-with-private-key-jwt.js`
+Run your sample using node, example: - `node FOLDER/file.js` 
+Example: `node PAR/par-with-private-key-jwt.js`
 
 ### NOTE: Majority of the examples above use https://jwt.io as a callback url to recieve either the token response directly or the intermediate code. If you recieve the `code` on the url, it means you have to copy the code from the browser url and copy it into the command line prompt - `Please enter the code from the response?`
+
+
+### NOTE: You will need to contact your Auth0 rep or solutions engineers etc to make sure the required feature such as JAR is enabled for your auth0 tenant!
 
 
 
