@@ -14,6 +14,8 @@
     - this will create the required applications and resource servers for the rest of the samples
 - NOTE: You only have to run the bootstrap once as it sets all the required data within the .env file
 - NOTE: Make sure the correct connections are enabled at each application you created. To enable or disable connections go to the auth0 management console and edit.
+### Cleanup Script
+- There is also a script file named auth0Cleanup.js under the helpers folder. Running this script will delete the applications and the resource server created in auth0. This acts as a reset step incase you want to delete all data and start from scratch with the bootstrapping process. To run the cleanup use `node helpers/auth0Cleanup.js`
 
 ## Samples
 - Authorization code grant flow
