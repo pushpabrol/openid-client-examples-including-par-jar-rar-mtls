@@ -1,29 +1,34 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
-import  open from "open";
+import http from "http"
+
+const server = http.createServer().listen(8988);
+import { parse  as parseUrl} from 'url'
+
+import open from "open";
 import { Issuer, generators } from 'openid-client';
-
-import readline from "readline";
-
 import pkg from 'node-jose';
 const { JWK } = pkg;
 
-const code_verifier = generators.codeVerifier();
-// store the code_verifier in your framework's session mechanism, if it is a cookie based solution
-// it should be httpOnly (not readable by javascript) and encrypted.
+const nonce = generators.nonce();
+const redirectUri = "http://127.0.0.1:8988";
 
-const code_challenge = generators.codeChallenge(code_verifier);
+server.removeAllListeners('request');
+server.once('listening', () => {
+  (async () => {
 
-const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
-//console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
+    const code_verifier = generators.codeVerifier();
+    // store the code_verifier in your framework's session mechanism, if it is a cookie based solution
+    // it should be httpOnly (not readable by javascript) and encrypted.
 
-var privateKey = process.env.JAR_PVT_KEY;
+    const code_challenge = generators.codeChallenge(code_verifier);
 
+    const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
+    //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
 
+    var privateKey = process.env.JAR_PVT_KEY;
 
-(async () => {
-  try {
 
       var keystore = JWK.createKeyStore();
       await keystore.add(privateKey, "pem");
@@ -34,7 +39,7 @@ var privateKey = process.env.JAR_PVT_KEY;
           post_logout_redirect_uris: ["https://jwt.io"],
           request_object_signing_alg : 'RS256',
           response_types : ["id_token", "code"],
-          redirect_uri : process.env.PKJAR_REDIRECT_URI
+          redirect_uris : [process.env.PKJAR_REDIRECT_URI, redirectUri]
           
 
       }, keystore.toJSON(true));
@@ -48,7 +53,8 @@ var privateKey = process.env.JAR_PVT_KEY;
         response_type: "code",  
         code_challenge,
         code_challenge_method: 'S256',
-        redirect_uri: process.env.PKJAR_REDIRECT_URI
+        redirect_uri: redirectUri,
+        nonce:nonce
     
     });
       console.log(req);
@@ -57,35 +63,35 @@ var privateKey = process.env.JAR_PVT_KEY;
           request: req
       });
 
+      server.on('request', async (req, res) => {
+        res.setHeader('connection', 'close');
+        var query = parseUrl(req.url).query;
+        console.log(query);
+        
+          if (query.split("=")[0] == "code") {
+            const tokenSet = await client.callback(redirectUri, { "code": query.split("=")[1] }, { "nonce": nonce,"code_verifier": code_verifier});
 
-  // Specify app arguments
-  await open(url, {app: ['google chrome']});
-
-  const code = await askQuestion("Please enter the code from the response? ");
-  console.log(code);
-
-  const params = {"code" : code};
-  console.log(params);
-
-  const tokenSet = await client.callback(process.env.PKJAR_REDIRECT_URI, params,{"code_verifier": code_verifier });
-
-  console.log(tokenSet);
-    }
-    catch(e){
-      console.log(e);
-    }
-
-})();
-
-
-function askQuestion(query) {
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-  });
-
-  return new Promise(resolve => rl.question(query, ans => {
-      rl.close();
-      resolve(ans);
-  }))
-}
+    
+            console.log('got', tokenSet);
+            console.log('id token claims', tokenSet.claims());
+    
+            const userinfo = await client.userinfo(tokenSet);
+            console.log('userinfo', userinfo);
+    
+            res.end('you can close this now');
+            server.close();
+          }
+          else {
+            res.end('No code param found in the query string!. Close this now and try again!');
+            server.close();
+          }
+    
+      });
+    
+      await open(url, { wait: false });
+      })().catch((err) => {
+        console.error(err);
+        process.exitCode = 1;
+        server.close();
+      });
+    });        

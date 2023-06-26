@@ -4,7 +4,7 @@ dotenv.config()
 import  open from "open";
 import { Issuer, generators } from 'openid-client';
 
-import readline from "readline";
+import { askQuestion } from '../helpers/helpers.js';
 (async () => {
 
 
@@ -32,7 +32,7 @@ const client = new auth0Issuer.Client({
 const url =  client.authorizationUrl({
     audience: process.env.AUD,
     scope: `openid profile ${process.env.AUD_SCOPES}`,
-    response_type: "token id_token",  
+    response_type: "code",  
     code_challenge,
     code_challenge_method: 'S256',
     nonce: nonce
@@ -55,14 +55,3 @@ const url =  client.authorizationUrl({
 
 })();
 
-function askQuestion(query) {
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-  });
-
-  return new Promise(resolve => rl.question(query, ans => {
-      rl.close();
-      resolve(ans);
-  }))
-}

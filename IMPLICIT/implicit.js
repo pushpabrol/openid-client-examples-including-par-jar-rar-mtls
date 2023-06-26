@@ -24,12 +24,12 @@ const url = await client.authorizationUrl({
 
 });
 
-
-
-
 (async () => {
   // Specify app arguments
   await open(url, {app: ['google chrome']});
 
 })();
+
+
+
 

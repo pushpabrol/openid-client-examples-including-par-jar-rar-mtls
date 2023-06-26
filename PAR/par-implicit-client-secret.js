@@ -9,7 +9,8 @@ const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 const client = new auth0Issuer.Client({
   client_id: process.env.RWA_CLIENT_ID,
   client_secret: process.env.RWA_CLIENT_SECRET,
-  redirect_uris: [process.env.RWA_REDIRECT_URI]
+  redirect_uris: [process.env.RWA_REDIRECT_URI],
+  response_types: ['token','id_token','code']
 
 });
 

@@ -1,19 +1,31 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
+import http from "http"
+
+const server = http.createServer().listen(8988);
+import { parse  as parseUrl} from 'url'
+
 import open from "open";
 import { Issuer, generators } from 'openid-client';
-import readline from "readline";
+import anyBody from 'body';
+
+const nonce = generators.nonce();
+
+const redirectUri = "http://127.0.0.1:8988";
 
 import pkg from 'node-jose';
 const { JWK } = pkg;
 
-const algorithm = 'RS256'
 var privateKey = process.env.PVT_KEY.replace(/\n/g,"\r\n");
+server.removeAllListeners('request');
 
+server.once('listening', () => {
+    (async () => {
+      const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
+      const { address, port } = server.address();
+      const hostname = "127.0.0.1"
 
-(async () => {
-    try {
 
         var keystore = JWK.createKeyStore();
         await keystore.add(privateKey, "pem");
@@ -23,16 +35,10 @@ var privateKey = process.env.PVT_KEY.replace(/\n/g,"\r\n");
 
         const code_challenge = generators.codeChallenge(code_verifier);
 
-
-        const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
-
-        //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
-
-
         const client = new auth0Issuer.Client({
             client_id: process.env.PKJWT_CLIENT_ID,
             token_endpoint_auth_method: 'private_key_jwt',
-            redirect_uris: [process.env.PKJWT_REDIRECT_URI]
+            redirect_uris: [redirectUri]
 
         },keystore.toJSON(true));
 
@@ -43,46 +49,47 @@ var privateKey = process.env.PVT_KEY.replace(/\n/g,"\r\n");
             response_type: responseType,
             code_challenge,
             code_challenge_method: 'S256',
+            nonce:nonce,
             "ext-authz-transfer-amount": "100000",
             "ext-authz-transfer-recipient": "abc"
 
         });
 
+        server.on('request', async (req, res) => {
+            res.setHeader('connection', 'close');
+            var query = parseUrl(req.url).query;
+            console.log(query);
+            
+              if (query.split("=")[0] == "code") {
+        
+                const tokenSet = await client.callback(redirectUri, { "code": query.split("=")[1] },{"nonce" : nonce,"code_verifier": code_verifier });
+        
+                console.log('got', tokenSet);
+                console.log('id token claims', tokenSet.claims());
+        
+                const userinfo = await client.userinfo(tokenSet);
+                console.log('userinfo', userinfo);
+        
+                res.end('you can close this now');
+                server.close();
+              }
+              else {
+                res.end('No code param found in the query string!. Close this now and try again!');
+                server.close();
+              }
+        
+        
+          });
+        
+          await open(url, { wait: true });
+          })().catch((err) => {
+            console.error(err);
+            process.exitCode = 1;
+            server.close();
+          });
+        });
+        
 
-        (async () => {
-            // Specify app arguments
-            await open(url, { app: ['google chrome'] });
-            if(responseType === "code") { 
-            const code = await askQuestion("Please enter the code from the response? ");
-            console.log(code);
-            const params = { "code": code };
-            console.log(params);
-
-            const tokenSet = await client.callback(process.env.PKJWT_REDIRECT_URI, params, {"code_verifier": code_verifier });
-
-            console.log(tokenSet);
-            }
-
-        })();
-
-
-        function askQuestion(query) {
-            const rl = readline.createInterface({
-                input: process.stdin,
-                output: process.stdout,
-            });
-
-            return new Promise(resolve => rl.question(query, ans => {
-                rl.close();
-                resolve(ans);
-            }))
-        }
-
-
-    } catch (err) {
-        console.error(err);
-    }
-})();
 
 
 

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import {  __dirname } from './generators.js';
+import {  __dirname } from './helpers.js';
 import { ManagementClient } from 'auth0';
 dotenv.config(`${__dirname}/.env`)
 
@@ -20,7 +20,7 @@ const getAllClients = async () => {
         const result = await auth0.getClients({
           page: page,
           per_page: 100,
-          fields: 'client_id,name',
+          fields: 'client_id,name,callbacks,app_type',
           include_fields: true // Adjust the number of clients per page as needed
         });
   
@@ -54,6 +54,19 @@ const getAllClients = async () => {
     return filteredClients;
   };
   
+
+  const filterClientsByCallbacks = (clients) => {
+    const filteredClients = clients.filter((client) => {
+      
+        if (typeof client.callbacks === 'undefined') {
+          return true;
+        }
+      
+      return false;
+    });
+  
+    return filteredClients;
+  };
 
   const filterResourceServersByName = (reseourceservers, nameFilters) => {
     const filteredRSs = reseourceservers.filter((rs) => {
@@ -102,6 +115,8 @@ const getAllClients = async () => {
     clients.forEach((client) => {
       console.log(`Client Name: ${client.name}`);
       console.log(`Client ID: ${client.client_id}`);
+      console.log(`Client Callbacks: ${client.callbacks}`);
+      console.log(`Client Type: ${client.app_type}`);
       console.log('-------------------');
     });
   };
@@ -155,25 +170,26 @@ const deleteResourceServers = async (rss) => {
  * 
  */
 var clients = await getAllClients();
-console.log("Total number of clients ", clients.length);
+console.log("In this Auth0 tenant - Total number of clients ", clients.length);
 var reseourceservers = await getAllResourceServers();
-console.log("Total number of Resource Servers ", reseourceservers.length);
+console.log("In this Auth0 tenant - Total number of Resource Servers ", reseourceservers.length);
 const rsFilters = ["MY_API_"];
 const clientFilters = ["Native_Device_FLow_Test-","RWA_CLIENT_","Native_Device_FLow_Test","SPA_Test_Client","PKJWT_CLIENT","JAR_CLIENT","JARPKJWT_CLIENT"];
 
 var filteredClients = filterClientsByName(clients,clientFilters);
+//var filteredClients = filterClientsByCallbacks(clients);
 if(filteredClients.length > 0)
 {
 printClientNamesAndIds(filteredClients)
-console.log(filteredClients.length);
+console.log(`Found ${filteredClients.length} clients that would be deleted`);
 deleteClients(filteredClients);
-} else console.log("No clients with names matching the filters found!!!")
+} else console.log(`No clients with names matching the filters found!!!`)
 
 var filteredRSs = filterResourceServersByName(reseourceservers,rsFilters);
 if(filteredRSs.length > 0)
 {
 printRSNamesAndIds(filteredRSs);
-console.log(filteredRSs.length);
+console.log(`Found ${filteredRSs.length} APIs that would be deleted`);
 deleteResourceServers(filteredRSs)
 } else console.log("No resource servers matching the filters found!!!")
 

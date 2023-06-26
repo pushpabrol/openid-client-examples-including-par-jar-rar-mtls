@@ -4,7 +4,7 @@ dotenv.config()
 import  open from "open";
 import { Issuer, generators } from 'openid-client';
 
-import readline from "readline";
+import { askQuestion } from '../helpers/helpers.js';
 
 const code_verifier = generators.codeVerifier();
 // store the code_verifier in your framework's session mechanism, if it is a cookie based solution
@@ -51,14 +51,3 @@ const url =  client.authorizationUrl({
 })();
 
 
-function askQuestion(query) {
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-  });
-
-  return new Promise(resolve => rl.question(query, ans => {
-      rl.close();
-      resolve(ans);
-  }))
-}

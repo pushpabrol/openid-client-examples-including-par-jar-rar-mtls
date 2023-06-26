@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
 
 
-import { random, setEnvValue, generateKeyPair, __dirname } from './generators.js';
+import { random, setEnvValue, generateKeyPair, __dirname } from './helpers.js';
 import auth0 from 'auth0';
 
 dotenv.config(`${__dirname}/.env`)
@@ -18,18 +18,16 @@ var callbackUrl = "https://jwt.io";
 
 var pkjwtClientId = "";
 var resourceIdentifier = "";
-
-
+var rwaClientId = "";
 
 (async() => {
     try {
-        
-         
         await createPrivateKeyJwtClient();
         await createNativeClient();
         await createSpaClient();
         await createResourceServer();
         await createRegularWebAppClient();
+        await createRWARSClientGrant();
         await createPkJWTRSClientGrant();
         await createJARClientClientSecret();
         await createJARClientWithPrivateKeyJwtAuth();
@@ -65,7 +63,7 @@ async function createPrivateKeyJwtClient(){
       "rotation_type": "non-rotating"
     },
     "callbacks": [
-      "${callbackUrl}", "http://localhost:3750/resume-transaction"
+      "${callbackUrl}", "http://127.0.0.1:8988", "http://localhost:3750/resume-transaction"
     ],
     "native_social_login": {
       "apple": {
@@ -106,7 +104,7 @@ async function createPrivateKeyJwtClient(){
     
     setEnvValue("PVT_KEY", JSON.stringify(pks.privateKey));
     const client = await mgmtClient.createClient(pkJwtClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     pkjwtClientId = client.client_id;
     setEnvValue("PKJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJWT_REDIRECT_URI", callbackUrl);
@@ -137,7 +135,7 @@ async function createJARClientClientSecret(){
       "rotation_type": "non-rotating"
     },
     "callbacks": [
-      "${callbackUrl}", "http://localhost:3750/resume-transaction"
+      "${callbackUrl}", "http://127.0.0.1:8988", "http://localhost:3750/resume-transaction"
     ],
     "native_social_login": {
       "apple": {
@@ -176,7 +174,7 @@ async function createJARClientClientSecret(){
     
     setEnvValue("JAR_PVT_KEY", JSON.stringify(pks.privateKey));
     const client = await mgmtClient.createClient(pkJARClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("PKJAR_CLIENT_ID", client.client_id)
     setEnvValue("PKJAR_CLIENT_SECRET", client.client_secret)
     setEnvValue("PKJAR_REDIRECT_URI", callbackUrl);
@@ -208,7 +206,7 @@ async function createJARClientWithPrivateKeyJwtAuth(){
       "rotation_type": "non-rotating"
     },
     "callbacks": [
-      "${callbackUrl}", "http://localhost:3750/resume-transaction"
+      "${callbackUrl}", "http://127.0.0.1:8988", "http://localhost:3750/resume-transaction"
     ],
     "native_social_login": {
       "apple": {
@@ -258,7 +256,7 @@ async function createJARClientWithPrivateKeyJwtAuth(){
     setEnvValue("FORJAR_TEAUTH_PVT_KEY", JSON.stringify(pksAuth.privateKey));
     setEnvValue("FORJAR_SAR_PVT_KEY", JSON.stringify(pksSAR.privateKey));
     const client = await mgmtClient.createClient(pkJwtClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("PKJARJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJARJWT_REDIRECT_URI", callbackUrl);
     
@@ -288,7 +286,7 @@ async function createRegularWebAppClient(){
     },
     "allowed_clients": [],
     "callbacks": [
-      "${callbackUrl}"
+      "${callbackUrl}","http://127.0.0.1:8988"
     ],
     "native_social_login": {
       "apple": {
@@ -315,8 +313,9 @@ async function createRegularWebAppClient(){
   }
 `;
     const client = await mgmtClient.createClient(regularWebAppClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("RWA_CLIENT_ID", client.client_id)
+    rwaClientId = client.client_id;
     setEnvValue("RWA_CLIENT_SECRET", client.client_secret);
     setEnvValue("RWA_REDIRECT_URI", callbackUrl)
 
@@ -345,7 +344,7 @@ async function createNativeClient(){
     },
     "allowed_clients": [],
     "callbacks": [
-      "${callbackUrl}"
+      "${callbackUrl}", "http://127.0.0.1:8988"
     ],
     "native_social_login": {
       "apple": {
@@ -373,7 +372,7 @@ async function createNativeClient(){
   `;
 
     const client = await mgmtClient.createClient(nativeClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NATIVE_CLIENT_ID", client.client_id)
 
 
@@ -401,7 +400,7 @@ async function createSpaClient(){
     },
     "allowed_clients": [],
     "callbacks": [
-      "${callbackUrl}"
+      "${callbackUrl}", "http://127.0.0.1:8988"
     ],
     "native_social_login": {
       "apple": {
@@ -428,7 +427,7 @@ async function createSpaClient(){
   `;
 
     const client = await mgmtClient.createClient(spaClientTemplate);
-    console.log(client);
+    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NON_CONFIDENTIAL_CLIENT_ID", client.client_id)
     
 
@@ -462,7 +461,7 @@ async function createResourceServer(){
     ]  
   }`
     const rs = await mgmtClient.createResourceServer(resourceServerTemplate)
-    console.log(rs);
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
     setEnvValue("AUD", rs.identifier)
     resourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
@@ -479,6 +478,20 @@ async function createPkJWTRSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(pkjwtClientGrant);
+   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${resourceIdentifier}`);
   
+}
+
+
+async function createRWARSClientGrant(){
+
+  
+  const rwaRSClientGrant = await mgmtClient.createClientGrant( {
+   "client_id": rwaClientId,
+   "audience": resourceIdentifier,
+   "scope" : ["read:stats", "upload:stats"]
+  });
+
+  console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`);
+ 
 }

@@ -1,62 +1,81 @@
 import dotenv from 'dotenv'
 dotenv.config()
-import  open from "open";
+
+import http from "http"
+
+const server = http.createServer().listen(8988);
+import { parse  as parseUrl} from 'url'
+
+import open from "open";
 import { Issuer, generators } from 'openid-client';
+import anyBody from 'body';
 
-import readline from "readline";
+const nonce = generators.nonce();
 
-const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
-//console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
+const redirectUri = "http://127.0.0.1:8988";
 
-const client = new auth0Issuer.Client({
-  client_id: process.env.RWA_CLIENT_ID,
-  client_secret: process.env.RWA_CLIENT_SECRET,
-  redirect_uris: [process.env.RWA_REDIRECT_URI],
-  response_types: ['token','id_token','code'],
+server.removeAllListeners('request');
 
-});
+server.once('listening', () => {
+  (async () => {
+    const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
+    const { address, port } = server.address();
+    const hostname = "127.0.0.1"
+
+    console.log(hostname);
+
+    const client = new auth0Issuer.Client({
+      client_id: process.env.RWA_CLIENT_ID,
+      client_secret: process.env.RWA_CLIENT_SECRET,
+      redirect_uris: [redirectUri],
+      response_types: ['token','id_token','code'],
+    
+    });
+
+    const response = await client.pushedAuthorizationRequest({
+      audience: process.env.AUD,
+      scope: `openid ${process.env.AUD_SCOPES}`,
+      response_type: "code", 
+      "ext-authz-transfer-amount" : "100000",
+      "ext-authz-transfer-recipient" : "abc"
+  
+  });
+  
+  console.log(response);
+  
+  const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
+
+  server.on('request', async (req, res) => {
+    res.setHeader('connection', 'close');
+    var query = parseUrl(req.url).query;
+    console.log(query);
+    
+      if (query.split("=")[0] == "code") {
+        const tokenSet = await client.callback(
+          redirectUri, { "code": query.split("=")[1] }, {},
+        );
+
+        console.log('got', tokenSet);
+        console.log('id token claims', tokenSet.claims());
+
+        const userinfo = await client.userinfo(tokenSet);
+        console.log('userinfo', userinfo);
+
+        res.end('you can close this now');
+        server.close();
+      }
+      else {
+        res.end('No code param found in the query string!. Close this now and try again!');
+        server.close();
+      }
 
 
-const response = await client.pushedAuthorizationRequest({
-    audience: process.env.AUD,
-    scope: `openid ${process.env.AUD_SCOPES}`,
-    nonce: "132123",
-    response_type: "code", 
-    "ext-authz-transfer-amount" : "100000",
-    "ext-authz-transfer-recipient" : "abc"
-
-});
-
-console.log(response);
-
-const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
-
-(async () => {
-  // Specify app arguments
-  await open(url, {app: ['google chrome']});
-
-  const code = await askQuestion("Please enter the code from the response? ");
-  console.log(code);
-
-  const params = {"code" : code};
-  console.log(params);
-
-  const tokenSet = await client.callback(process.env.RWA_REDIRECT_URI, params,{"nonce" : "132123" });
-
-  console.log(tokenSet);
-
-
-})();
-
-
-function askQuestion(query) {
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
   });
 
-  return new Promise(resolve => rl.question(query, ans => {
-      rl.close();
-      resolve(ans);
-  }))
-}
+  await open(url, { wait: true });
+  })().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+    server.close();
+  });
+});

@@ -1,12 +1,9 @@
 import dotenv from 'dotenv'
 dotenv.config()
-import  open from "open";
 import { Issuer } from 'openid-client';
 import QRCode from 'qrcode';
 
 
-
-import readline from "readline";
 
 const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
@@ -25,8 +22,6 @@ const client = new auth0Issuer.Client({
 const handle = await client.deviceAuthorization();
 console.log(handle);
 
-
-//await open(handle.verification_uri_complete, { wait: false });
 var i = handle.expires_in;
 
 var timer = waitingForVerification(i); 

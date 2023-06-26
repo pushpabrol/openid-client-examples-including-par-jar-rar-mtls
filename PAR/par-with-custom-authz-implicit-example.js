@@ -4,7 +4,7 @@ dotenv.config()
 import  open from "open";
 import { Issuer, generators } from 'openid-client';
 
-import readline from "readline";
+import { askQuestion } from '../helpers/helpers.js';
 
 const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);

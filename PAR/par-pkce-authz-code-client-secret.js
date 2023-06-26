@@ -1,19 +1,29 @@
 import dotenv from 'dotenv'
 dotenv.config()
 
-import  open from "open";
+import http from "http"
+
+const server = http.createServer().listen(8988);
+import { parse  as parseUrl} from 'url'
+
+import open from "open";
 import { Issuer, generators } from 'openid-client';
+import anyBody from 'body';
 
-import readline from "readline";
-
+const nonce = generators.nonce();
 const code_verifier = generators.codeVerifier();
-// store the code_verifier in your framework's session mechanism, if it is a cookie based solution
-// it should be httpOnly (not readable by javascript) and encrypted.
-
 const code_challenge = generators.codeChallenge(code_verifier);
 
-const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
-//console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
+const redirectUri = "http://127.0.0.1:8988";
+
+server.removeAllListeners('request');
+
+server.once('listening', () => {
+  (async () => {
+    const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
+    const { address, port } = server.address();
+    const hostname = "127.0.0.1"
+
 
 const client = new auth0Issuer.Client({
   client_id: process.env.RWA_CLIENT_ID,
@@ -26,7 +36,7 @@ const client = new auth0Issuer.Client({
 const response = await client.pushedAuthorizationRequest({
     audience: process.env.AUD,
     scope: `openid ${process.env.AUD_SCOPES}`,
-    nonce: "132123",
+    nonce: nonce,
     response_type: "code",  
     code_challenge,
     code_challenge_method: 'S256',
@@ -35,35 +45,41 @@ const response = await client.pushedAuthorizationRequest({
 
 });
 
+
 console.log(response);
-const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
+  
+  const url = `https://${process.env.DOMAIN}/authorize?client_id=${process.env.RWA_CLIENT_ID}&request_uri=${response.request_uri}`;
 
-(async () => {
-  // Specify app arguments
-  await open(url, {app: ['google chrome']});
+  server.on('request', async (req, res) => {
+    res.setHeader('connection', 'close');
+    var query = parseUrl(req.url).query;
+    console.log(query);
+    
+      if (query.split("=")[0] == "code") {
 
-  const code = await askQuestion("Please enter the code from the response? ");
-  console.log(code);
+        const tokenSet = await client.callback(redirectUri, { "code": query.split("=")[1] },{"nonce" : nonce,"code_verifier": code_verifier });
 
-  const params = {"code" : code};
-  console.log(params);
+        console.log('got', tokenSet);
+        console.log('id token claims', tokenSet.claims());
 
-  const tokenSet = await client.callback(process.env.RWA_REDIRECT_URI, params,{"nonce" : "132123","code_verifier": code_verifier });
+        const userinfo = await client.userinfo(tokenSet);
+        console.log('userinfo', userinfo);
 
-  console.log(tokenSet);
+        res.end('you can close this now');
+        server.close();
+      }
+      else {
+        res.end('No code param found in the query string!. Close this now and try again!');
+        server.close();
+      }
 
 
-})();
-
-
-function askQuestion(query) {
-  const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
   });
 
-  return new Promise(resolve => rl.question(query, ans => {
-      rl.close();
-      resolve(ans);
-  }))
-}
+  await open(url, { wait: true });
+  })().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+    server.close();
+  });
+});

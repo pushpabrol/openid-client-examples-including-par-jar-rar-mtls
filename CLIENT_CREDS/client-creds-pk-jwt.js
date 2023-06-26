@@ -1,20 +1,16 @@
 import dotenv from 'dotenv'
 dotenv.config()
-
-import open from "open";
 import { Issuer, generators } from 'openid-client';
-import readline from "readline";
 
 import pkg from 'node-jose';
 const { JWK } = pkg;
 
-var privateKey = process.env.PVT_KEY;
-
+const privateKey = process.env.PVT_KEY;
 
 (async () => {
     try {
         
-        var keystore = JWK.createKeyStore();
+        const keystore = JWK.createKeyStore();
         await keystore.add(privateKey, "pem");
 
         const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
@@ -26,7 +22,7 @@ var privateKey = process.env.PVT_KEY;
 
         },keystore.toJSON(true));
 
-        auth0Issuer.log = console;
+        //auth0Issuer.log = console;
         
         const token = await client.grant({
             grant_type: "client_credentials",
