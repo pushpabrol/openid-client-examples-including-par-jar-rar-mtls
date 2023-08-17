@@ -53,13 +53,14 @@ server.once('listening', () => {
       
 
     });
-
-    await open(client.authorizationUrl({
+    var url = client.authorizationUrl({
       audience: process.env.AUD,
       scope: `openid ${process.env.AUD_SCOPES}`,
       nonce: nonce,
       response_type: "code"
-  }), { wait: false });
+  });
+  console.log(url);
+    await open(url, { wait: false });
   })().catch((err) => {
     console.error(err);
     process.exitCode = 1;
