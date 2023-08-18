@@ -27,7 +27,7 @@ server.once('listening', () => {
 const client = new auth0Issuer.Client({
   client_id: process.env.RWA_CLIENT_ID,
   client_secret: process.env.RWA_CLIENT_SECRET,
-  redirect_uris: [process.env.RWA_REDIRECT_URI],
+  redirect_uris: [redirectUri],
   response_types: ['code'],
 
 });

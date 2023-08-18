@@ -22,11 +22,13 @@
   - AUTHZ_CODE + JAR + PAR + client with ID/secret
   - AUTHZ_CODE + JAR + PAR + client with JWTCA
   - PKCE + JAR + client with ID/secret
+  - PKCE + JAR + JWTCA
   - AUTHZ_CODE + JAR +  client with JWTCA
 - PAR
   - AUTHZ_CODE + PAR +  client with ID/secret
   - Implicit + PAR + client with ID/secret
   - PKCE + PAR + client with ID/secret
+  - PKCE + PAR + client with JWTCA
   - PKCE + PAR + public client (no secret, so not supported)
   - PAR + custom RAR + Implicit flow + client with ID/secret
   - AUTHZ_CODE + PAR + client with JWTCA
