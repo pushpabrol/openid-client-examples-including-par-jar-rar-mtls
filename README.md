@@ -38,10 +38,10 @@
 Run your sample using node, example: - `node FOLDER/file.js` 
 Example: `node PAR/par-with-private-key-jwt.js`
 
-### NOTE: Majority of the examples above use https://jwt.io as a callback url to recieve either the token response directly or the intermediate code. If you recieve the `code` on the url, it means you have to copy the code from the browser url and copy it into the command line prompt - `Please enter the code from the response?`
+### NOTE: Majority of the examples above use https://jwt.io as a callback url to recieve either the token response directly or use a server listening at http://127.0.0.1:8988 listening for the authorization code.
 
 
-### NOTE: You will need to contact your Auth0 rep or solutions engineers etc to make sure the required feature such as JAR is enabled for your auth0 tenant!
+### NOTE: You will need to contact your Auth0 rep or solutions engineers etc to make sure the required feature such as PAR, JAR, RAR are enabled for your auth0 tenant!
 
 
 
