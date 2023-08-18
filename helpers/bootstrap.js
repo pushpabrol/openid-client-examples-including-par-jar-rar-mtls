@@ -19,6 +19,7 @@ var callbackUrl = "https://jwt.io";
 var pkjwtClientId = "";
 var resourceIdentifier = "";
 var rwaClientId = "";
+var clients = [];
 
 (async() => {
     try {
@@ -31,6 +32,7 @@ var rwaClientId = "";
         await createPkJWTRSClientGrant();
         await createJARClientClientSecret();
         await createJARClientWithPrivateKeyJwtAuth();
+        await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
          
         
     } catch (error) {
@@ -106,8 +108,9 @@ async function createPrivateKeyJwtClient(){
     const client = await mgmtClient.createClient(pkJwtClientTemplate);
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     pkjwtClientId = client.client_id;
-    setEnvValue("PKJWT_CLIENT_ID", client.client_id)
+    setEnvValue("PKJWT_CLIENT_ID", client.client_id);
     setEnvValue("PKJWT_REDIRECT_URI", callbackUrl);
+    clients.push(pkjwtClientId);
     
 
 
@@ -178,6 +181,7 @@ async function createJARClientClientSecret(){
     setEnvValue("PKJAR_CLIENT_ID", client.client_id)
     setEnvValue("PKJAR_CLIENT_SECRET", client.client_secret)
     setEnvValue("PKJAR_REDIRECT_URI", callbackUrl);
+    clients.push(client.client_id);
     
 
 
@@ -259,6 +263,7 @@ async function createJARClientWithPrivateKeyJwtAuth(){
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("PKJARJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJARJWT_REDIRECT_URI", callbackUrl);
+    clients.push(client.client_id);
     
 
 
@@ -318,6 +323,7 @@ async function createRegularWebAppClient(){
     rwaClientId = client.client_id;
     setEnvValue("RWA_CLIENT_SECRET", client.client_secret);
     setEnvValue("RWA_REDIRECT_URI", callbackUrl)
+    clients.push(client.client_id);
 
 }
 
@@ -374,6 +380,7 @@ async function createNativeClient(){
     const client = await mgmtClient.createClient(nativeClientTemplate);
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NATIVE_CLIENT_ID", client.client_id)
+    clients.push(client.client_id);
 
 
 }
@@ -429,6 +436,7 @@ async function createSpaClient(){
     const client = await mgmtClient.createClient(spaClientTemplate);
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NON_CONFIDENTIAL_CLIENT_ID", client.client_id)
+    clients.push(client.client_id);
     
 
 
@@ -494,4 +502,29 @@ async function createRWARSClientGrant(){
 
   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`);
  
+}
+
+
+
+async function enableUserConnectionForClients(clients,name) {
+  try {
+    var connection = await mgmtClient.getConnections({ name });
+    if (connection.length > 0) {
+      connection = connection[0]
+      var clientsEnabled = connection.enabled_clients;
+      console.log(connection);
+      clients.forEach(client => {
+        clientsEnabled.push(client);
+      });
+      
+      connection = await mgmtClient.updateConnection({ id: connection.id }, { enabled_clients: clientsEnabled });
+      console.log('Database connection updated for all clients!');
+      return connection;
+    }
+    console.log('ERROR!!!!: Connection not found to be enabled');
+
+  } catch (error) {
+    console.error('Error updating user connection for clients:', error.message);
+  }
+
 }
