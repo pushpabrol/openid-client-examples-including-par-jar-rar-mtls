@@ -15,7 +15,7 @@
     "body-parser": "^1.20.2",
     "crypto": "^1.0.1",
     "dotenv": "^16.0.1",
-    "jose": "^4.8.3",
+    "jose": "^4.14.4",
     "node-jose": "^2.1.1",
     "open": "^8.4.0",
     "openid-client": "^5.1.8",
