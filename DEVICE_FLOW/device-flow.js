@@ -7,7 +7,6 @@ import QRCode from 'qrcode';
 
 const auth0Issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
 //console.log('Discovered issuer %s %O', auth0Issuer.issuer, auth0Issuer.metadata);
-
 const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
 
 const client = new auth0Issuer.Client({
@@ -32,9 +31,7 @@ QRCode.toString(handle.verification_uri_complete,{type:'terminal',margin:4, scal
     // Printing the generated code
     console.log(QRcode);
   
-
 })
-
 
 const tokenSet = await handle.poll()
 console.log("\n Done!");

@@ -48,15 +48,9 @@ server.once('listening', () => {
                 "locations": [
                   "https://example.com/payments"
                 ],
-                "instructedAmount": {
-                  "currency": "EUR",
-                  "amount": "123.50"
-                },
-                "creditorName": "Merchant123",
-                "creditorAccount": {
-                  "iban": "DE02100100109307118603"
-                },
-                "remittanceInformationUnstructured": "Ref Number Merchant"
+                
+                  "roles": []
+              
               }])
 
         });

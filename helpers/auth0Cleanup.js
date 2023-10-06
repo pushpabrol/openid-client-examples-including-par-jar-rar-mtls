@@ -174,7 +174,7 @@ console.log("In this Auth0 tenant - Total number of clients ", clients.length);
 var reseourceservers = await getAllResourceServers();
 console.log("In this Auth0 tenant - Total number of Resource Servers ", reseourceservers.length);
 const rsFilters = ["MY_API_"];
-const clientFilters = ["Native_Device_FLow_Test-","RWA_CLIENT_","Native_Device_FLow_Test","SPA_Test_Client","PKJWT_CLIENT","JAR_CLIENT","JARPKJWT_CLIENT"];
+const clientFilters = ["MTLS_", "Native_Device_FLow_Test-","RWA_CLIENT_","Native_Device_FLow_Test","SPA_Test_Client","PKJWT_CLIENT","JAR_CLIENT","JARPKJWT_CLIENT"];
 
 var filteredClients = filterClientsByName(clients,clientFilters);
 //var filteredClients = filterClientsByCallbacks(clients);

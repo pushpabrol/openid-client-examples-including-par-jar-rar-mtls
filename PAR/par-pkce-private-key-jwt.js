@@ -40,6 +40,7 @@ server.once('listening', () => {
 
         auth0Issuer.log = console;
 
+
         const responseType = "code";
         const response = await client.pushedAuthorizationRequest({
             audience: process.env.AUD,
@@ -49,19 +50,11 @@ server.once('listening', () => {
             code_challenge_method: 'S256',
             response_type: responseType,
             "authorization_details": JSON.stringify([ {
-                "type": "payment_initiation",
-                "locations": [
-                  "https://example.com/payments"
-                ],
-                "instructedAmount": {
-                  "currency": "EUR",
-                  "amount": "123.50"
-                },
-                "creditorName": "Merchant123",
-                "creditorAccount": {
-                  "iban": "DE02100100109307118603"
-                },
-                "remittanceInformationUnstructured": "Ref Number Merchant"
+                "type": "https://cookiestore.desmaximus.com/buy-cookies",
+                "transaction_id" : "1232112312",
+                "transaction_amount": 123,
+                "creditorName": "Cookie Store of Pushp",
+                "account": 'Checking Account 45-049-21'
               }])
 
         });

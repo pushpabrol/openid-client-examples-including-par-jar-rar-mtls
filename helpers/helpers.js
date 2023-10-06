@@ -9,7 +9,7 @@ import readline from "readline";
 const __filename = fileURLToPath(import.meta.url);
 // First find out the __dirname, then resolve to one higher level in the dir tree
 export const __dirname = path.resolve(path.dirname(__filename), "../");
-
+console.log(__dirname);
 export const random = randomUUID;
 
 export const generateKeyPair = () => {
