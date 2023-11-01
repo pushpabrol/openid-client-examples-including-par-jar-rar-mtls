@@ -27,21 +27,21 @@ var clients = [];
 (async() => {
     try {
 
-        //await createResourceServer();
+        await createResourceServer();
         await createJWEAccessTokenResourceServer();
-        // await createMTLSSelfSignedCertClient();
-        // await createMTLSSelfSignedCertClientWithCBAT();
-        // await createMTLSCASignedCertClient();
-        // await createMTLSCASignedCertClientWithCBAT();
-        // await createPrivateKeyJwtClient();
-        // await createNativeClient();
-        // await createSpaClient();
-        // await createRegularWebAppClient();
-        // await createRWARSClientGrant();
-        // await createPkJWTRSClientGrant();
-        // await createJARClientClientSecret();
-        // await createJARClientWithPrivateKeyJwtAuth();
-        // await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
+         await createMTLSSelfSignedCertClient();
+         await createMTLSSelfSignedCertClientWithCBAT();
+        await createMTLSCASignedCertClient();
+        await createMTLSCASignedCertClientWithCBAT();
+        await createPrivateKeyJwtClient();
+        await createNativeClient();
+        await createSpaClient();
+        await createRegularWebAppClient();
+        await createRWARSClientGrant();
+        await createPkJWTRSClientGrant();
+        await createJARClientClientSecret();
+        await createJARClientWithPrivateKeyJwtAuth();
+        await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
          
         
     } catch (error) {
