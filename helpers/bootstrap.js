@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
-
+import pkg from 'node-jose';
+const { JWK } = pkg;
 
 import { random, setEnvValue, generateKeyPair, __dirname } from './helpers.js';
 import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.js'
@@ -26,20 +27,21 @@ var clients = [];
 (async() => {
     try {
 
-        await createResourceServer();
-        await createMTLSSelfSignedCertClient();
-        await createMTLSSelfSignedCertClientWithCBAT();
-        await createMTLSCASignedCertClient();
-        await createMTLSCASignedCertClientWithCBAT();
-        await createPrivateKeyJwtClient();
-        await createNativeClient();
-        await createSpaClient();
-        await createRegularWebAppClient();
-        await createRWARSClientGrant();
-        await createPkJWTRSClientGrant();
-        await createJARClientClientSecret();
-        await createJARClientWithPrivateKeyJwtAuth();
-        await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
+        //await createResourceServer();
+        await createJWEAccessTokenResourceServer();
+        // await createMTLSSelfSignedCertClient();
+        // await createMTLSSelfSignedCertClientWithCBAT();
+        // await createMTLSCASignedCertClient();
+        // await createMTLSCASignedCertClientWithCBAT();
+        // await createPrivateKeyJwtClient();
+        // await createNativeClient();
+        // await createSpaClient();
+        // await createRegularWebAppClient();
+        // await createRWARSClientGrant();
+        // await createPkJWTRSClientGrant();
+        // await createJARClientClientSecret();
+        // await createJARClientWithPrivateKeyJwtAuth();
+        // await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
          
         
     } catch (error) {
@@ -799,6 +801,56 @@ async function createResourceServer(){
     setEnvValue("AUD", rs.identifier)
     resourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
+
+
+}
+
+
+async function createJWEAccessTokenResourceServer(){
+
+  const keystore = JWK.createKeyStore();
+  const key = await keystore.generate("RSA", 4096, { use: "enc", alg: "RSA-OAEP-256" });
+    const pemPrivateKey = await key.toPEM(true);
+    const pemPublicKey = await key.toPEM();
+  
+
+  var resourceServerTemplate = `
+  {
+    "name": "ENCRYPTED_ACCESS_TOKEN_API",
+    "identifier": "urn:my:api:encrypted_accessToken",
+    "token_lifetime": 86400,
+    "token_lifetime_for_web": 7200,
+    "skip_consent_for_verifiable_first_party_clients": true,
+    "signing_alg": "RS256",
+    "scopes": [
+      {
+        "value": "read:all_stats",
+        "description": "read all data"
+      },
+      {
+        "value": "read:stats",
+        "description": "read my own stats"
+      },
+      {
+        "value": "upload:stats",
+        "description": "Upload Stats"
+      }
+    ],
+    "token_encryption":{
+      "format" : "compact-nested-jwe",
+      "encryption_key" : {
+          "name" : "at-encryption-key",
+            "alg": "RSA-OAEP-256",
+            "pem" : ${JSON.stringify(pemPublicKey)}
+        }
+
+      }  
+  }`
+    const rs = await mgmtClient.createResourceServer(resourceServerTemplate)
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    setEnvValue("JWE_API_AUD", rs.identifier)
+    setEnvValue("JWE_PRIVATE_KEY", JSON.stringify(pemPrivateKey))
+
 
 
 }

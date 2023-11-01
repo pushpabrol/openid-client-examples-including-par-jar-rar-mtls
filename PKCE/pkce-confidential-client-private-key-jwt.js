@@ -26,7 +26,6 @@ server.once('listening', () => {
       const { address, port } = server.address();
       const hostname = "127.0.0.1"
 
-
         var keystore = JWK.createKeyStore();
         await keystore.add(privateKey, "pem");
         const code_verifier = generators.codeVerifier();

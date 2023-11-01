@@ -34,7 +34,17 @@
   - AUTHZ_CODE + PAR + client with JWTCA
   - RAR + PAR + Implicit flow
   - PKCE + PAR + client with ID/secret
-
+- MTLS (WIP, setup for MTLS is outside the scope of these samples!)
+  -  AUTHZ_CODE + MTLS with CA signed cert
+  -  Client Credentials flow + MTLS with CA signed cert
+  -  PAR + AUTHZ_CODE +  MTLS with CA signed cert
+  -  AUTHZ_CODE + MTLS with CA signed cert + Client Bound Access Token
+  -  Client Credentials flow + MTLS with CA signed cert + Client Bound Access Token
+  - AUTHZ_CODE + MTLS with self signed cert
+  - Client Credentials flow + MTLS with self signed cert
+  - Client Credentials flow + MTLS with self signed cert + Client Bound Access Token
+- JWE ACCESS_TOKEN ( Auth0 issued access token is JWE, Resource Server in Auth0 holds the public key to encrypt the access token)
+  - AUTHZ_CODE + JWE Access Token
 
 ## SETUP
 

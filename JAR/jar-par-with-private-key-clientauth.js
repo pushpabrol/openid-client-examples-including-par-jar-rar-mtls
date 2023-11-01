@@ -45,7 +45,17 @@ server.once('listening', () => {
     var req = await client.requestObject({
       response_type: "code", scope: "openid profile",
       redirect_uri: redirectUri,
-      nonce: nonce
+      nonce: nonce,
+      "authorization_details": JSON.stringify([ {
+        "type": "payment_initiation",
+        "locations": [
+          "https://example.com/payments"
+        ],
+        "transaction_amount": 1234,
+        "creditorName": "Merchant123",
+        "account":  "DE02100100109307118603",
+        "remittanceInformationUnstructured": "Ref Number Merchant"
+      }])
     });
     console.log(req);
 
