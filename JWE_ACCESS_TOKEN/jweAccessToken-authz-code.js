@@ -8,7 +8,8 @@ import base64url from 'base64url'
 import pkg1 from 'jwks-rsa';
 const { JwksClient } = pkg1
 
-import { verify } from 'jsonwebtoken'
+import pkg2 from 'jsonwebtoken';
+const { verify } = pkg2;
 const server = http.createServer().listen(8988);
 import open from "open";
 import { Issuer, generators } from 'openid-client';
@@ -83,30 +84,7 @@ server.once('listening', () => {
       audience: process.env.JWE_API_AUD,
       scope: `openid ${process.env.AUD_SCOPES}`,
       nonce: nonce,
-      response_type: "code",
-      "authorization_details": JSON.stringify([{
-        "type": "account_information",
-        "actions": [
-           "list_accounts",
-           "read_balances",
-           "read_transactions"
-        ],
-        "locations": [
-           "https://example.com/accounts"
-        ]
-     },
-     {
-      "type": "customer_information",
-      "locations": [
-         "https://example.com/customers"
-      ],
-      "actions": [
-         "read"
-      ],
-      "datatypes": [
-         "contacts"
-      ]
-   }])
+      response_type: "code"
 
   });
   console.log(url);

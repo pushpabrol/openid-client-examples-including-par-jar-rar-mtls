@@ -46,6 +46,7 @@ server.once('listening', () => {
       response_type: "code", scope: "openid profile",
       redirect_uri: redirectUri,
       nonce: nonce,
+      audience:process.env.AUD,
       "authorization_details": JSON.stringify([ {
         "type": "payment_initiation",
         "locations": [
