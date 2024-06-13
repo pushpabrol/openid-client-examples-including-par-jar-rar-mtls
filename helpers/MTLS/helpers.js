@@ -230,8 +230,9 @@ export const createSelfSignedCerts = (commonName) => {
         // Save the PFX file to disk in the client directory
         const pfxPath = path.join(clientDir, 'client-certificate.pfx');
         fs.writeFileSync(pfxPath, p12Der, 'binary');
-        return { clientCertificatePath, clientPrivateKeyPath, pfxPath }
         console.log(`Self-signed client certificate PFX file saved with password "Auth0Dem0" in directory: ${commonName}`);
+        return { clientCertificatePath, clientPrivateKeyPath, pfxPath }
+        
     }
     else {
         console.log(`Certificate folder for Self Signed Cert with commonName - ${commonName} alredy exists. use a new one!`);

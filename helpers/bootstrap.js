@@ -4,16 +4,18 @@ const { JWK } = pkg;
 
 import { random, setEnvValue, generateKeyPair, __dirname } from './helpers.js';
 import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.js'
-import auth0 from 'auth0';
+import { ManagementClient} from 'auth0';
 import fs from 'fs';
+
+console.log(__dirname)
 
 dotenv.config(`${__dirname}/.env`)
 
-var mgmtClient = new auth0.ManagementClient({
-  domain: process.env.DOMAIN,
+
+var mgmtClient = new ManagementClient({
+  domain: process.env.AUTH0_DOMAIN,
   clientId: process.env.MGMT_CLIENT_ID,
-  clientSecret: process.env.MGMT_CLIENT_SECRET,
-  scope: 'read:clients create:clients update:clients create:client_grants',
+  clientSecret: process.env.MGMT_CLIENT_SECRET
 });
 
 //default
@@ -21,27 +23,34 @@ var callbackUrl = "http://127.0.0.1:8988";
 
 var pkjwtClientId = "";
 var resourceIdentifier = process.env.AUD  || "";
+var nonHRIResourceIdentifier = process.env.NON_HRI_AUD || "";
+var jweAccessTokenResourceIdentifier = process.env.JWE_API_AUD || "";
 var rwaClientId = "";
 var clients = [];
 
 (async() => {
     try {
-
+        await createResourceServerForNonHRIFlows();
         await createResourceServer();
         await createJWEAccessTokenResourceServer();
-         await createMTLSSelfSignedCertClient();
-         await createMTLSSelfSignedCertClientWithCBAT();
+        await createMTLSSelfSignedCertClient();
+        await createMTLSSelfSignedCertClientWithCBAT();
+        await wait(3000);
         await createMTLSCASignedCertClient();
         await createMTLSCASignedCertClientWithCBAT();
         await createPrivateKeyJwtClient();
+        await wait(3000);
         await createNativeClient();
         await createSpaClient();
         await createRegularWebAppClient();
+        await wait(3000);
         await createRWARSClientGrant();
         await createPkJWTRSClientGrant();
+        await wait(3000);
         await createJARClientClientSecret();
         await createJARClientWithPrivateKeyJwtAuth();
         await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
+        await setCustomizedConsentPromptToRenderAuthorizationDetails();
          
         
     } catch (error) {
@@ -115,7 +124,7 @@ async function createMTLSSelfSignedCertClient(){
     
 `;
 
-const client = await mgmtClient.createClient(mTLSSelfSignedClientTemplate);
+const client = (await mgmtClient.clients.create(JSON.parse(mTLSSelfSignedClientTemplate))).data;
 console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
 setEnvValue("MTLS_CLIENT_ID_SELFSIGNED", client.client_id)
 setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_REDIRECT_URI", callbackUrl);
@@ -129,7 +138,7 @@ clients.push(client.client_id);
 }
 
 
-async function createMTLSSelfSignedCertClientWithCBAT(){
+async function  createMTLSSelfSignedCertClientWithCBAT(){
 
   const clientName = `MTLS_AUTHZ_CODE_Self_Signed_Cert_With_CBAT${random()}`;
 
@@ -143,19 +152,6 @@ async function createMTLSSelfSignedCertClientWithCBAT(){
     {
       "is_token_endpoint_ip_header_trusted": false,
          "name": "${clientName}",
-         "is_first_party": true,
-         "oidc_conformant": true,
-         "sso_disabled": false,
-         "cross_origin_auth": false,
-         "refresh_token": {
-           "expiration_type": "non-expiring",
-           "leeway": 0,
-           "infinite_token_lifetime": true,
-           "infinite_idle_token_lifetime": true,
-           "token_lifetime": 31557600,
-           "idle_token_lifetime": 2592000,
-           "rotation_type": "non-rotating"
-         },
          "callbacks": [
           "${callbackUrl}", "https://jwt.io"
          ],
@@ -187,16 +183,13 @@ async function createMTLSSelfSignedCertClientWithCBAT(){
              "credential_type": "x509_cert", 
              "pem": ${JSON.stringify(fs.readFileSync(paths.clientCertificatePath).toString('utf8'))}
            }]
-         }
-         },
-         "access_token": {
-             "tls_client_certificate_binding": true
+         }  
          }
        }
     
 `;
 
-const client = await mgmtClient.createClient(mTLSSelfSignedClientTemplate);
+const client = (await mgmtClient.clients.create(JSON.parse(mTLSSelfSignedClientTemplate))).data;
 console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
 setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_CBAT", client.client_id)
 setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_REDIRECT_URI_CBAT", callbackUrl);
@@ -268,16 +261,13 @@ async function createMTLSCASignedCertClientWithCBAT(){
              "pem": ${JSON.stringify(fs.readFileSync(paths.clientCertificatePath).toString('utf8'))}
            }]
          }
-         },
-        "access_token": {
-            "tls_client_certificate_binding": true
-        }
+         }
 
        }
     
 `;
 
-const client = await mgmtClient.createClient(mTLSCASignedClientWithCBATTemplate);
+const client = (await mgmtClient.clients.create(JSON.parse(mTLSCASignedClientWithCBATTemplate))).data;
 console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
 setEnvValue("MTLS_CLIENT_ID_CASIGNED_CBAT", client.client_id)
 setEnvValue("MTLS_CLIENT_ID_CASIGNED_REDIRECT_URI_CBAT", callbackUrl);
@@ -355,7 +345,7 @@ async function createMTLSCASignedCertClient(){
     
 `;
 
-const client = await mgmtClient.createClient(mTLSCASignedClientTemplate);
+const client = (await mgmtClient.clients.create(JSON.parse(mTLSCASignedClientTemplate))).data;
 console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
 setEnvValue("MTLS_CLIENT_ID_CASIGNED", client.client_id)
 setEnvValue("MTLS_CLIENT_ID_CASIGNED_REDIRECT_URI", callbackUrl);
@@ -429,11 +419,9 @@ async function createPrivateKeyJwtClient(){
     }
   }
 `;
-
-
     
     setEnvValue("PVT_KEY", JSON.stringify(pks.privateKey));
-    const client = await mgmtClient.createClient(pkJwtClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(pkJwtClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     pkjwtClientId = client.client_id;
     setEnvValue("PKJWT_CLIENT_ID", client.client_id);
@@ -504,7 +492,7 @@ async function createJARClientClientSecret(){
 
     
     setEnvValue("JAR_PVT_KEY", JSON.stringify(pks.privateKey));
-    const client = await mgmtClient.createClient(pkJARClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(pkJARClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("PKJAR_CLIENT_ID", client.client_id)
     setEnvValue("PKJAR_CLIENT_SECRET", client.client_secret)
@@ -587,7 +575,7 @@ async function createJARClientWithPrivateKeyJwtAuth(){
     
     setEnvValue("FORJAR_TEAUTH_PVT_KEY", JSON.stringify(pksAuth.privateKey));
     setEnvValue("FORJAR_SAR_PVT_KEY", JSON.stringify(pksSAR.privateKey));
-    const client = await mgmtClient.createClient(pkJwtClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(pkJwtClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("PKJARJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJARJWT_REDIRECT_URI", callbackUrl);
@@ -645,7 +633,7 @@ async function createRegularWebAppClient(){
     "custom_login_page_on": false
   }
 `;
-    const client = await mgmtClient.createClient(regularWebAppClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(regularWebAppClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("RWA_CLIENT_ID", client.client_id)
     rwaClientId = client.client_id;
@@ -705,7 +693,7 @@ async function createNativeClient(){
   }
   `;
 
-    const client = await mgmtClient.createClient(nativeClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(nativeClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NATIVE_CLIENT_ID", client.client_id)
     clients.push(client.client_id);
@@ -761,7 +749,7 @@ async function createSpaClient(){
   }
   `;
 
-    const client = await mgmtClient.createClient(spaClientTemplate);
+    const client = (await mgmtClient.clients.create(JSON.parse(spaClientTemplate))).data;
     console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
     setEnvValue("NON_CONFIDENTIAL_CLIENT_ID", client.client_id)
     clients.push(client.client_id);
@@ -771,12 +759,13 @@ async function createSpaClient(){
 }
 
 
-async function createResourceServer(){
+
+async function createResourceServerForNonHRIFlows(){
 
   var resourceServerTemplate = `
   {
-    "name": "MY_API_${random()}",
-    "identifier": "urn:my:api:${random()}",
+    "name": "YOUR_API",
+    "identifier": "urn:your:api",
     "token_lifetime": 86400,
     "token_lifetime_for_web": 7200,
     "skip_consent_for_verifiable_first_party_clients": true,
@@ -795,13 +784,86 @@ async function createResourceServer(){
         "description": "Upload Stats"
       }
     ]  
-  }`
-    const rs = await mgmtClient.createResourceServer(resourceServerTemplate)
+  }`;
+
+
+  try {
+    const existingRs = await mgmtClient.resourceServers.get({id : "urn:your:api"});
+    console.log("Deleting existing resource server:")
+    console.log(existingRs);
+    await mgmtClient.resourceServers.delete({ id: "urn:your:api"});
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    setEnvValue("NON_HRI_AUD", rs.identifier)
+    nonHRIResourceIdentifier = rs.identifier;
+    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
+  }
+  catch(error){
+      if(error.statusCode === 404){
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    setEnvValue("NON_HRI_AUD", rs.identifier)
+    nonHRIResourceIdentifier = rs.identifier;
+    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
+      }
+  }
+
+}
+
+
+async function createResourceServer(){
+
+  var resourceServerTemplate = `
+  {
+    "name": "BANK_API_HRI",
+    "identifier": "urn:bank:api:hri",
+    "token_lifetime": 86400,
+    "token_lifetime_for_web": 7200,
+    "skip_consent_for_verifiable_first_party_clients": true,
+    "signing_alg": "RS256",
+    "consent_policy": "transactional-authorization-with-mfa",
+    "authorization_details": [{"type": "payment_initiation"}, {"type": "customer_information"}, {"type": "account_information"}],
+    "proof_of_possession": {
+        "mechanism": "mtls",
+        "required": false
+    },
+    "scopes": [
+      {
+        "value": "read:all_stats",
+        "description": "read all data"
+      },
+      {
+        "value": "read:stats",
+        "description": "read my own stats"
+      },
+      {
+        "value": "upload:stats",
+        "description": "Upload Stats"
+      }
+    ]  
+  }`;
+
+
+  try {
+    const existingRs = await mgmtClient.resourceServers.get({id : "urn:bank:api:hri"});
+    console.log("Deleting existing resource server:")
+    console.log(existingRs);
+    await mgmtClient.resourceServers.delete({ id: "urn:bank:api:hri"});
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
     console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
     setEnvValue("AUD", rs.identifier)
     resourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
-
+  }
+  catch(error){
+      if(error.statusCode === 404){
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    setEnvValue("AUD", rs.identifier)
+    resourceIdentifier = rs.identifier;
+    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
+      }
+  }
 
 }
 
@@ -810,19 +872,24 @@ async function createJWEAccessTokenResourceServer(){
 
   const keystore = JWK.createKeyStore();
   const key = await keystore.generate("RSA", 4096, { use: "enc", alg: "RSA-OAEP-256" });
-    const pemPrivateKey = await key.toPEM(true);
-    const pemPublicKey = await key.toPEM();
+  const pemPrivateKey = await key.toPEM(true);
+  const pemPublicKey = await key.toPEM();
   
 
   var resourceServerTemplate = `
   {
-    "name": "ENCRYPTED_ACCESS_TOKEN_API",
+    "name": "JWE_ENCRYPTED_ACCESS_TOKEN_API",
     "identifier": "urn:my:api:encrypted_accessToken",
     "token_lifetime": 86400,
     "token_lifetime_for_web": 7200,
     "skip_consent_for_verifiable_first_party_clients": true,
     "signing_alg": "RS256",
-    "scopes": [
+    "consent_policy": "transactional-authorization-with-mfa",
+    "authorization_details": [{"type": "payment_initiation"}, {"type": "customer_information"}, {"type": "account_information"}],
+    "proof_of_possession": {
+        "mechanism": "mtls",
+        "required": false
+    },    "scopes": [
       {
         "value": "read:all_stats",
         "description": "read all data"
@@ -846,11 +913,27 @@ async function createJWEAccessTokenResourceServer(){
 
       }  
   }`
-    const rs = await mgmtClient.createResourceServer(resourceServerTemplate)
+  try {
+    const existingRs = await mgmtClient.resourceServers.get({id : "urn:my:api:encrypted_accessToken"});
+    console.log("Deleting existing resource server:")
+    console.log(existingRs);
+    await mgmtClient.resourceServers.delete({ id: "urn:my:api:encrypted_accessToken"});
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
     console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
     setEnvValue("JWE_API_AUD", rs.identifier)
+    jweAccessTokenResourceIdentifier = rs.identifier;
+    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
     setEnvValue("JWE_PRIVATE_KEY", JSON.stringify(pemPrivateKey))
-
+  }
+  catch(error){
+      if(error.statusCode === 404){
+    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
+    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    setEnvValue("JWE_API_AUD", rs.identifier)
+    jweAccessTokenResourceIdentifier = rs.identifier;
+    setEnvValue("JWE_PRIVATE_KEY", JSON.stringify(pemPrivateKey))
+      }
+  }
 
 
 }
@@ -858,13 +941,29 @@ async function createJWEAccessTokenResourceServer(){
 async function createPkJWTRSClientGrant(){
 
   
-   const pkjwtClientGrant = await mgmtClient.createClientGrant( {
+   await mgmtClient.clientGrants.create( {
     "client_id": pkjwtClientId,
     "audience": resourceIdentifier,
     "scope" : ["read:stats", "upload:stats"]
    });
 
    console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${resourceIdentifier}`);
+
+   await mgmtClient.clientGrants.create( {
+    "client_id": pkjwtClientId,
+    "audience": jweAccessTokenResourceIdentifier,
+    "scope" : ["read:stats", "upload:stats"]
+   });
+
+   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${jweAccessTokenResourceIdentifier}`);
+
+   await mgmtClient.clientGrants.create( {
+    "client_id": pkjwtClientId,
+    "audience": nonHRIResourceIdentifier,
+    "scope" : ["read:stats", "upload:stats"]
+   });
+
+   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${nonHRIResourceIdentifier}`);
   
 }
 
@@ -872,26 +971,42 @@ async function createPkJWTRSClientGrant(){
 async function createRWARSClientGrant(){
 
   
-  const rwaRSClientGrant = await mgmtClient.createClientGrant( {
+  await mgmtClient.clientGrants.create( {
    "client_id": rwaClientId,
    "audience": resourceIdentifier,
    "scope" : ["read:stats", "upload:stats"]
   });
 
   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`);
+
+  await mgmtClient.clientGrants.create( {
+    "client_id": rwaClientId,
+    "audience": jweAccessTokenResourceIdentifier,
+    "scope" : ["read:stats", "upload:stats"]
+   });
+
+   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${jweAccessTokenResourceIdentifier}`);
+
+   await mgmtClient.clientGrants.create( {
+    "client_id": rwaClientId,
+    "audience": nonHRIResourceIdentifier,
+    "scope" : ["read:stats", "upload:stats"]
+   });
+
+   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${nonHRIResourceIdentifier}`);
+
  
 }
 
 async function createClientGrant(clientId, audience, scopeArr){
-
   
-  const rwaRSClientGrant = await mgmtClient.createClientGrant( {
+  await mgmtClient.clientGrants.create( {
    "client_id": clientId,
    "audience": audience,
    "scope" : scopeArr || ["read:stats", "upload:stats"]
   });
 
-  console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`);
+  console.log(`Created client Grant for Client with ID: ${clientId} & API: ${resourceIdentifier}`);
  
 }
 
@@ -899,16 +1014,17 @@ async function createClientGrant(clientId, audience, scopeArr){
 
 async function enableUserConnectionForClients(clients,name) {
   try {
-    var connection = await mgmtClient.getConnections({ name });
+    var connection = (await mgmtClient.connections.getAll({ name })).data;
     if (connection.length > 0) {
       connection = connection[0]
       var clientsEnabled = connection.enabled_clients;
+      //var clientsEnabled = [];
       console.log(connection);
       clients.forEach(client => {
         clientsEnabled.push(client);
       });
       
-      connection = await mgmtClient.updateConnection({ id: connection.id }, { enabled_clients: clientsEnabled });
+      connection = await mgmtClient.connections.update({ id: connection.id }, { enabled_clients: clientsEnabled });
       console.log('Database connection updated for all clients!');
       return connection;
     }
@@ -918,4 +1034,145 @@ async function enableUserConnectionForClients(clients,name) {
     console.error('Error updating user connection for clients:', error.message);
   }
 
+}
+
+async function setCustomizedConsentPromptToRenderAuthorizationDetails(){
+  // Define the customized consent template
+const customizedConsentTemplate = {
+  "customized-consent": {
+    "form-content": `<div class="operation-details">
+  <style>
+    .operation-details {
+      font-size: 1em;
+      margin-bottom: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .title {
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+    .separator {
+      margin: 10px 0;
+      border-top: 1px solid #ccc;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .label {
+      font-weight: bold;
+      color: #333;
+    }
+    .value {
+      margin-left: 10px;
+      color: #555;
+    }
+  </style>
+
+  <div class="title">Operation Details</div>
+  <hr class="separator">
+  
+  {% for detail in transaction.params.authorization_details %}
+    <div class="section">
+      <div class="label">Transaction Type</div>
+      <div class="value">{{ detail.type }}</div>
+    </div>
+    
+    {% if detail.type == 'payment_initiation' %}
+      <div class="section">
+        <div class="label">Amount</div>
+        <div class="value">{{ detail.instructedAmount.amount }} {{ detail.instructedAmount.currency }}</div>
+      </div>
+      <div class="section">
+        <div class="label">Recipient</div>
+        <div class="value">{{ detail.creditorName }}</div>
+      </div>
+      <div class="section">
+        <div class="label">Destination Account</div>
+        <div class="value">{{ detail.creditorAccount.iban }}</div>
+      </div>
+      <div class="section">
+        <div class="label">Remittance Information</div>
+        <div class="value">{{ detail.remittanceInformationUnstructured }}</div>
+      </div>
+    {% elsif detail.type == 'credit_request' %}
+      <div class="section">
+        <div class="label">Requested Credit Amount</div>
+        <div class="value">{{ detail.requestedCreditAmount }} {{ detail.requestedCreditCurrency }}</div>
+      </div>
+      <div class="section">
+        <div class="label">Requestor</div>
+        <div class="value">{{ detail.requestorName }}</div>
+      </div>
+      <div class="section">
+        <div class="label">Purpose</div>
+        <div class="value">{{ detail.purpose }}</div>
+      </div>
+    {% elsif detail.type == 'account_information' %}
+      <div class="section">
+        <div class="label">Actions</div>
+        <div class="value">
+          <ul>
+            {% for action in detail.actions %}
+              <li>{{ action }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <div class="label">Locations</div>
+        <div class="value">
+          <ul>
+            {% for location in detail.locations %}
+              <li>{{ location }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% elsif detail.type == 'customer_information' %}
+      <div class="section">
+        <div class="label">Locations</div>
+        <div class="value">
+          <ul>
+            {% for location in detail.locations %}
+              <li>{{ location }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <div class="label">Actions</div>
+        <div class="value">
+          <ul>
+            {% for action in detail.actions %}
+              <li>{{ action }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="section">
+        <div class="label">Data Types</div>
+        <div class="value">
+          <ul>
+            {% for datatype in detail.datatypes %}
+              <li>{{ datatype }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+    <div class="separator"></div>
+  {% endfor %}
+</div>
+`
+  }
+};
+
+// Update the customized consent prompt
+ const updated = await mgmtClient.prompts.updatePartials({ prompt: 'customized-consent'}, customizedConsentTemplate);
+console.log(updated);
+}
+
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

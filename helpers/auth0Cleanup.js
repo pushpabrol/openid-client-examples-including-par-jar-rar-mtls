@@ -5,7 +5,7 @@ dotenv.config(`${__dirname}/.env`)
 
 // Create a new instance of the ManagementClient
 const auth0 = new ManagementClient({
-    domain: process.env.DOMAIN,
+    domain: process.env.AUTH0_DOMAIN,
     clientId: process.env.MGMT_CLIENT_ID,
     clientSecret: process.env.MGMT_CLIENT_SECRET,
 });
@@ -17,12 +17,12 @@ const getAllClients = async () => {
       let clients = [];
   
       while (true) {
-        const result = await auth0.getClients({
+        const result = (await auth0.clients.getAll({
           page: page,
           per_page: 100,
           fields: 'client_id,name,callbacks,app_type',
           include_fields: true // Adjust the number of clients per page as needed
-        });
+        })).data;
   
         clients = clients.concat(result);
   
@@ -87,12 +87,12 @@ const getAllClients = async () => {
       let reseourceservers = [];
   
       while (true) {
-        const result = await auth0.getResourceServers({
+        const result = (await auth0.resourceServers.getAll({
           page: page,
           per_page: 100,
           fields: 'id,name,identifier',
           include_fields: true // Adjust the number of reseourceservers per page as needed
-        });
+        })).data;
   
         reseourceservers = reseourceservers.concat(result);
   
@@ -138,7 +138,7 @@ const deleteClients = async (clients) => {
   try {
 
     for (const client of clients) {
-      await auth0.deleteClient({ client_id: client.client_id });
+      await auth0.clients.delete({ client_id: client.client_id });
       console.log(`Deleted client with ID: ${client.client_id}`);
 
       // Delay between each deletion to handle rate limiting
@@ -153,7 +153,7 @@ const deleteResourceServers = async (rss) => {
     try {
   
       for (const rs of rss) {
-        await auth0.deleteResourceServer({ id: rs.id });
+        await auth0.resourceServers.delete({ id: rs.id });
         console.log(`Deleted RS with ID: ${rs.id}`);
   
         // Delay between each deletion to handle rate limiting

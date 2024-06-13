@@ -54,6 +54,29 @@ server.once('listening', () => {
         code_challenge,
         code_challenge_method: 'S256',
         redirect_uri: redirectUri,
+        "authorization_details": JSON.stringify([{
+          "type": "account_information",
+          "actions": [
+             "list_accounts",
+             "read_balances",
+             "read_transactions"
+          ],
+          "locations": [
+             "https://example.com/accounts"
+          ]
+       },
+       {
+        "type": "customer_information",
+        "locations": [
+           "https://example.com/customers"
+        ],
+        "actions": [
+           "read"
+        ],
+        "datatypes": [
+           "contacts"
+        ]
+     }]),
         nonce:nonce
     
     });

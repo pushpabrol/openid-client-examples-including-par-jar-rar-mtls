@@ -22,14 +22,29 @@ const response = await client.pushedAuthorizationRequest({
     scope: `openid ${process.env.AUD_SCOPES}`,
     nonce: "132123",
     response_type: "token id_token", 
-    "ext-type": "payment_initiation",
-      "ext-actions": "initiate:status:cancel"  ,
-      "ext-locations": "https://example.com/payments",
-      "ext-instructedAmount":"amount:123.50EUR",
-      "ext-debtorAccount":"iban:DE40100100103307118608",
-      "ext-creditorName":"Merchant123",
-      "ext-creditorAccount":"iban:DE02100100109307118603",
-      "ext-remitInfoUnstructured":"Ref Number Merchant"
+    "authorization_details": JSON.stringify([{
+      "type": "account_information",
+      "actions": [
+         "list_accounts",
+         "read_balances",
+         "read_transactions"
+      ],
+      "locations": [
+         "https://example.com/accounts"
+      ]
+   },
+   {
+    "type": "customer_information",
+    "locations": [
+       "https://example.com/customers"
+    ],
+    "actions": [
+       "read"
+    ],
+    "datatypes": [
+       "contacts"
+    ]
+ }])
     
 
 });

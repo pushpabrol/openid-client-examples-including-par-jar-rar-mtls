@@ -41,8 +41,32 @@ server.once('listening', () => {
 
         auth0Issuer.log = console;
 
-        var req = await client.requestObject({ response_type: "code", scope: "openid profile", 
-        redirect_uri : redirectUri});
+        var req = await client.requestObject({ response_type: "code", scope: `openid profile ${process.env.AUD_SCOPES}`, 
+        redirect_uri : redirectUri,
+        "authorization_details": JSON.stringify([{
+          "type": "account_information",
+          "actions": [
+             "list_accounts",
+             "read_balances",
+             "read_transactions"
+          ],
+          "locations": [
+             "https://example.com/accounts"
+          ]
+       },
+       {
+        "type": "customer_information",
+        "locations": [
+           "https://example.com/customers"
+        ],
+        "actions": [
+           "read"
+        ],
+        "datatypes": [
+           "contacts"
+        ]
+     }])
+      });
         console.log(req);
 
         const url = await client.authorizationUrl({

@@ -83,7 +83,31 @@ server.once('listening', () => {
       audience: process.env.JWE_API_AUD,
       scope: `openid ${process.env.AUD_SCOPES}`,
       nonce: nonce,
-      response_type: "code"
+      response_type: "code",
+      "authorization_details": JSON.stringify([{
+        "type": "account_information",
+        "actions": [
+           "list_accounts",
+           "read_balances",
+           "read_transactions"
+        ],
+        "locations": [
+           "https://example.com/accounts"
+        ]
+     },
+     {
+      "type": "customer_information",
+      "locations": [
+         "https://example.com/customers"
+      ],
+      "actions": [
+         "read"
+      ],
+      "datatypes": [
+         "contacts"
+      ]
+   }])
+
   });
   console.log(url);
     await open(url, { wait: false });

@@ -7,10 +7,12 @@ import https from 'https';
 import axios from 'axios';
 
 import readline from "readline";
+
 const CLIENT_ID = process.env.MTLS_CLIENT_ID_CASIGNED;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_CERT_PATH;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_PRIVATEKEY_PATH;
 const CA_PATH=process.env.CA_PATH;
+
 process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 
@@ -39,7 +41,7 @@ server.once('listening', () => {
         passphrase: passphrase,
         ca : ca
       });
-
+      Issuer[custom.http_options] = () => ({ key, cert, passphrase, ca });
     
       // Specify app arguments
      // Issuer[custom.http_options] = () => ({ key, cert, passphrase });
@@ -60,17 +62,36 @@ server.once('listening', () => {
       audience: process.env.AUD,
       scope: "openid profile " + process.env.AUD_SCOPES,
       "authorization_details": JSON.stringify([ {
-        "type": "admin_access_request",
-        "locations": [
-          "https://example.com/admin_requests"
+        "type": "account_information",
+        "actions": [
+           "list_accounts",
+           "read_balances",
+           "read_transactions"
         ],
-        "adminId": "auth0|123123",
-        "access_requested": {
-          "account": true,
-          "payment_review" : true,
-          "payment_use" : false
-        }
-      }])
+        "locations": [
+           "https://example.com/accounts"
+        ]
+     },
+     {
+        "type": "payment_initiation",
+        "actions": [
+           "initiate",
+           "status",
+           "cancel"
+        ],
+        "locations": [
+           "https://example.com/payments"
+        ],
+        "instructedAmount": {
+           "currency": "EUR",
+           "amount": "123.50"
+        },
+        "creditorName": "Merchant A",
+        "creditorAccount": {
+           "iban": "DE02100100109307118603"
+        },
+        "remittanceInformationUnstructured": "Ref Number Merchant"
+     }])
   });
   
   console.log(response);
@@ -88,6 +109,30 @@ server.once('listening', () => {
           const userinfo = await client.userinfo(tokenSet);
           console.log('userinfo', userinfo);
           res.end('you can close this now');
+          const httpsAgent = new https.Agent({
+            cert,
+            key,
+            ca,
+          });
+        
+        let config = {
+          method: 'get',
+          maxBodyLength: Infinity,
+          url: 'https://resource.desmaximus.com/mtls/protected',
+          headers: { 
+            'Authorization': `Bearer ${tokenSet.access_token}`
+          }, httpsAgent 
+        };
+        
+        axios.request(config)
+        .then((response) => {
+          console.log("Recieved API Response");
+        
+          console.log(JSON.stringify(response.data));
+        })
+        .catch((error) => {
+          console.log(error);
+        });
           server.close();
         }
         else {

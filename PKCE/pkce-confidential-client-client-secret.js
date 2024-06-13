@@ -33,7 +33,7 @@ const client = new auth0Issuer.Client({
 });
 
 const url =  client.authorizationUrl({
-    audience: process.env.AUD,
+    audience: process.env.NON_HRI_AUD,
     scope: `openid ${process.env.AUD_SCOPES}`,
     response_type: "code",  
     code_challenge,

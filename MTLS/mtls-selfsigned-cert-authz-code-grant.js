@@ -55,7 +55,30 @@ server.once('listening', () => {
     const url = await client.authorizationUrl({
         response_type: "code",
         audience: process.env.AUD,
-        scope: "openid profile " + process.env.AUD_SCOPES
+        scope: "openid profile " + process.env.AUD_SCOPES,
+        "authorization_details": JSON.stringify([{
+          "type": "account_information",
+          "actions": [
+             "list_accounts",
+             "read_balances",
+             "read_transactions"
+          ],
+          "locations": [
+             "https://example.com/accounts"
+          ]
+       },
+       {
+        "type": "customer_information",
+        "locations": [
+           "https://example.com/customers"
+        ],
+        "actions": [
+           "read"
+        ],
+        "datatypes": [
+           "contacts"
+        ]
+     }])
     });
     
     server.on('request', async (req, res) => {

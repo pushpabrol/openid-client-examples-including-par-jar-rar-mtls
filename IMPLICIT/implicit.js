@@ -17,7 +17,7 @@ const client = new auth0Issuer.Client({
 });
 
 const url = await client.authorizationUrl({
-    audience: process.env.AUD,
+    audience: process.env.NON_HRI_AUD,
     scope: `openid ${process.env.AUD_SCOPES}`,
     nonce: nonce,
     response_type: "token id_token"

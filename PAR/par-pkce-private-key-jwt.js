@@ -49,13 +49,29 @@ server.once('listening', () => {
             code_challenge,
             code_challenge_method: 'S256',
             response_type: responseType,
-            "authorization_details": JSON.stringify([ {
-                "type": "https://cookiestore.desmaximus.com/buy-cookies",
-                "transaction_id" : "1232112312",
-                "transaction_amount": 123,
-                "creditorName": "Cookie Store of Pushp",
-                "account": 'Checking Account 45-049-21'
-              }])
+            "authorization_details": JSON.stringify([{
+              "type": "account_information",
+              "actions": [
+                 "list_accounts",
+                 "read_balances",
+                 "read_transactions"
+              ],
+              "locations": [
+                 "https://example.com/accounts"
+              ]
+           },
+           {
+            "type": "customer_information",
+            "locations": [
+               "https://example.com/customers"
+            ],
+            "actions": [
+               "read"
+            ],
+            "datatypes": [
+               "contacts"
+            ]
+         }])
 
         });
 

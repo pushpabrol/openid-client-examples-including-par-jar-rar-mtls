@@ -26,7 +26,7 @@ const privateKey = process.env.PVT_KEY;
         
         const token = await client.grant({
             grant_type: "client_credentials",
-            audience : process.env.AUD
+            audience : process.env.NON_HRI_AUD
         });
       
         console.log(token);

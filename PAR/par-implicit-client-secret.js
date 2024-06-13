@@ -19,8 +19,29 @@ const response = await client.pushedAuthorizationRequest({
     scope: `openid ${process.env.AUD_SCOPES}`,
     nonce: "132123",
     response_type: "token id_token", 
-    "ext-authz-transfer-amount" : "100000",
-    "ext-authz-transfer-recipient" : "abc"
+    "authorization_details": JSON.stringify([{
+      "type": "account_information",
+      "actions": [
+         "list_accounts",
+         "read_balances",
+         "read_transactions"
+      ],
+      "locations": [
+         "https://example.com/accounts"
+      ]
+   },
+   {
+    "type": "customer_information",
+    "locations": [
+       "https://example.com/customers"
+    ],
+    "actions": [
+       "read"
+    ],
+    "datatypes": [
+       "contacts"
+    ]
+ }])
 
 });
 

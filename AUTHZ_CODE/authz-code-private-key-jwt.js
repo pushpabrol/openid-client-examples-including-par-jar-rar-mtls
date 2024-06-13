@@ -43,7 +43,7 @@ server.once('listening', () => {
 
         const responseType = "code";
         const url = client.authorizationUrl({
-            audience: process.env.AUD,
+            audience: process.env.NON_HRI_AUD,
             scope: `openid ${process.env.AUD_SCOPES}`,
             response_type: responseType,
             nonce:nonce
