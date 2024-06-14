@@ -46,29 +46,6 @@ await custom.setHttpOptionsDefaults({
       grant_type: "client_credentials",
       audience: process.env.AUD,
       scope: process.env.AUD_SCOPES,
-      "authorization_details": JSON.stringify([{
-        "type": "account_information",
-        "actions": [
-           "list_accounts",
-           "read_balances",
-           "read_transactions"
-        ],
-        "locations": [
-           "https://example.com/accounts"
-        ]
-     },
-     {
-      "type": "customer_information",
-      "locations": [
-         "https://example.com/customers"
-      ],
-      "actions": [
-         "read"
-      ],
-      "datatypes": [
-         "contacts"
-      ]
-   }])
   });
 
   console.log(token);

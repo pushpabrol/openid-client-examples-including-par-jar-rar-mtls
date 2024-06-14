@@ -197,12 +197,55 @@ export const createSelfSignedCerts = (commonName) => {
         clientCertificate.validity.notAfter = new Date();
         clientCertificate.validity.notAfter.setFullYear(clientCertificate.validity.notBefore.getFullYear() + 1);
 
+
         const clientAttrs = [
-            { name: 'commonName', value: commonName },
+            { name: 'commonName', value: 'commonName' },
+            { name: 'countryName', value: 'US' },
+            { shortName: 'ST', value: 'California' },
+            { name: 'localityName', value: 'San Francisco' },
+            { name: 'organizationName', value: 'TPP' },
+            { shortName: 'OU', value: 'IT' }
         ];
 
         clientCertificate.setSubject(clientAttrs);
         clientCertificate.setIssuer(clientAttrs);
+
+        // Set certificate extensions
+        clientCertificate.setExtensions([
+    {
+        name: 'basicConstraints',
+        cA: true
+    },
+    {
+        name: 'keyUsage',
+        keyCertSign: true,
+        digitalSignature: true,
+        nonRepudiation: true,
+        keyEncipherment: true,
+        dataEncipherment: true
+    },
+    {
+        name: 'extKeyUsage',
+        serverAuth: true,
+        clientAuth: true,
+        codeSigning: true,
+        emailProtection: true,
+        timeStamping: true
+    },
+    {
+        name: 'subjectAltName',
+        altNames: [
+            {
+                type: 2, // DNS name
+                value: 'localhost'
+            },
+            {
+                type: 7, // IP address
+                ip: '127.0.0.1'
+            }
+        ]
+    }
+]);
 
         // Sign the client certificate with the client private key (self-signed)
         clientCertificate.sign(clientKeys.privateKey);

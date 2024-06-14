@@ -7,8 +7,6 @@ import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.
 import { ManagementClient} from 'auth0';
 import fs from 'fs';
 
-console.log(__dirname)
-
 dotenv.config(`${__dirname}/.env`)
 
 
@@ -790,7 +788,6 @@ async function createResourceServerForNonHRIFlows(){
   try {
     const existingRs = await mgmtClient.resourceServers.get({id : "urn:your:api"});
     console.log("Deleting existing resource server:")
-    console.log(existingRs);
     await mgmtClient.resourceServers.delete({ id: "urn:your:api"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
     console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
@@ -847,7 +844,6 @@ async function createResourceServer(){
   try {
     const existingRs = await mgmtClient.resourceServers.get({id : "urn:bank:api:hri"});
     console.log("Deleting existing resource server:")
-    console.log(existingRs);
     await mgmtClient.resourceServers.delete({ id: "urn:bank:api:hri"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
     console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
@@ -916,7 +912,6 @@ async function createJWEAccessTokenResourceServer(){
   try {
     const existingRs = await mgmtClient.resourceServers.get({id : "urn:my:api:encrypted_accessToken"});
     console.log("Deleting existing resource server:")
-    console.log(existingRs);
     await mgmtClient.resourceServers.delete({ id: "urn:my:api:encrypted_accessToken"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
     console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
@@ -1019,7 +1014,6 @@ async function enableUserConnectionForClients(clients,name) {
       connection = connection[0]
       var clientsEnabled = connection.enabled_clients;
       //var clientsEnabled = [];
-      console.log(connection);
       clients.forEach(client => {
         clientsEnabled.push(client);
       });
@@ -1169,7 +1163,7 @@ const customizedConsentTemplate = {
 
 // Update the customized consent prompt
  const updated = await mgmtClient.prompts.updatePartials({ prompt: 'customized-consent'}, customizedConsentTemplate);
-console.log(updated);
+console.log("Done updating the customized consent prompt for the authorization details!");
 }
 
 
