@@ -7,8 +7,6 @@ import * as fs from 'fs';
 const CLIENT_ID = process.env.MTLS_CLIENT_ID_SELFSIGNED;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_CERT_PATH;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_PRIVATEKEY_PATH;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 
 const redirectUri = "http://127.0.0.1:8988";

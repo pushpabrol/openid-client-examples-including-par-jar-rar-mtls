@@ -9,7 +9,7 @@ import * as fs from 'fs';
 const CLIENT_ID = process.env.MTLS_CLIENT_ID_SELFSIGNED;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_CERT_PATH;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_PRIVATEKEY_PATH;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 
 (async () => {
 

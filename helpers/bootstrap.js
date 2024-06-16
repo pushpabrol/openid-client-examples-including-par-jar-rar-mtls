@@ -9,6 +9,8 @@ import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.
 import { ManagementClient } from 'auth0'; // Auth0 Management API client
 import fs from 'fs'; // Node.js file system module
 
+import chalk from 'chalk'; // Node.js file for colorful logs
+
 // Load environment variables from .env file
 dotenv.config(`${__dirname}/.env`);
 
@@ -34,9 +36,9 @@ var clients = []; // Array to store created client IDs
 (async () => {
     try {
         // Create various resource servers and clients
-        await createResourceServerForNonHRIFlows(); // Create resource server for non-HRI flows
-        await createResourceServer(); // Create main resource server
-        await createJWEAccessTokenResourceServer(); // Create resource server for JWE access tokens
+        await createNonHRIResourceServer(); // Create resource server for non-HRI flows
+        await createHRIResourceServer(); // Create main resource server
+        await createHRIResourceServerUsingJWE(); // Create resource server for JWE access tokens
 
         // Create MTLS clients with self-signed and CA-signed certificates
         await createMTLSSelfSignedCertClient();
@@ -58,20 +60,23 @@ var clients = []; // Array to store created client IDs
         await createJARClientWithPrivateKeyJwtAuth();
         await enableUserConnectionForClients(clients, process.env.CONNECTION_NAME); // Enable user connection for all created clients
         await setCustomizedConsentPromptToRenderAuthorizationDetails(); // Set customized consent prompt
+        await showImportantMessages();
         
     } catch (error) {
-        console.log(error); // Log the error
-        console.log(error.originalError); // Log the original error
+        console.log(chalk.red(error)); // Log the error
+        console.log(chalk.red(error.originalError)); // Log the original error
     }
 })();
 
 // Function to create a client with MTLS using self-signed certificates
 async function createMTLSSelfSignedCertClient() {
   const clientName = `MTLS_AUTHZ_CODE_Self_Signed_Cert_${random()}`; // Generate a unique client name
+  
   var paths = createSelfSignedCerts(clientName); // Create self-signed certificates for the client
 
   if (paths === null) {
-    console.log("Could not create mtls client because certs could not be created");
+    console.log(chalk.red("Could not create mtls client because certs could not be created"));
+
     return;
   }
 
@@ -130,7 +135,7 @@ async function createMTLSSelfSignedCertClient() {
 
   // Create the client using the Auth0 Management API
   const client = (await mgmtClient.clients.create(JSON.parse(mTLSSelfSignedClientTemplate))).data;
-  console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+  console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
 
   // Store client details in environment variables
   setEnvValue("MTLS_CLIENT_ID_SELFSIGNED", client.client_id);
@@ -153,7 +158,8 @@ async function  createMTLSSelfSignedCertClientWithCBAT(){
   var paths = createSelfSignedCerts(clientName);
 
     if(paths === null) { 
-      console.log("Could not create mtls client because certs could not be created"); 
+      console.log(chalk.red("Could not create mtls client because certs could not be created"));
+ 
       return;
     }
     var mTLSSelfSignedClientTemplate = `
@@ -217,7 +223,8 @@ async function createMTLSCASignedCertClientWithCBAT(){
   var paths = createCASignedClientCert(clientName);
 
     if(paths === null) { 
-      console.log("Could not create mtls client because certs could not be created"); 
+      console.log(chalk.red("Could not create mtls client because certs could not be created"));
+ 
       return;
     }
     var mTLSCASignedClientWithCBATTemplate = `
@@ -296,7 +303,8 @@ async function createMTLSCASignedCertClient(){
   var paths = createCASignedClientCert(clientName);
 
     if(paths === null) { 
-      console.log("Could not create mtls client because certs could not be created"); 
+      console.log(chalk.red("Could not create mtls client because certs could not be created"));
+ 
       return;
     }
     var mTLSCASignedClientTemplate = `
@@ -430,7 +438,7 @@ async function createPrivateKeyJwtClient(){
     
     setEnvValue("PVT_KEY", JSON.stringify(pks.privateKey));
     const client = (await mgmtClient.clients.create(JSON.parse(pkJwtClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     pkjwtClientId = client.client_id;
     setEnvValue("PKJWT_CLIENT_ID", client.client_id);
     setEnvValue("PKJWT_REDIRECT_URI", callbackUrl);
@@ -501,7 +509,7 @@ async function createJARClientClientSecret(){
     
     setEnvValue("JAR_PVT_KEY", JSON.stringify(pks.privateKey));
     const client = (await mgmtClient.clients.create(JSON.parse(pkJARClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     setEnvValue("PKJAR_CLIENT_ID", client.client_id)
     setEnvValue("PKJAR_CLIENT_SECRET", client.client_secret)
     setEnvValue("PKJAR_REDIRECT_URI", callbackUrl);
@@ -584,7 +592,7 @@ async function createJARClientWithPrivateKeyJwtAuth(){
     setEnvValue("FORJAR_TEAUTH_PVT_KEY", JSON.stringify(pksAuth.privateKey));
     setEnvValue("FORJAR_SAR_PVT_KEY", JSON.stringify(pksSAR.privateKey));
     const client = (await mgmtClient.clients.create(JSON.parse(pkJwtClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     setEnvValue("PKJARJWT_CLIENT_ID", client.client_id)
     setEnvValue("PKJARJWT_REDIRECT_URI", callbackUrl);
     clients.push(client.client_id);
@@ -642,7 +650,7 @@ async function createRegularWebAppClient(){
   }
 `;
     const client = (await mgmtClient.clients.create(JSON.parse(regularWebAppClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     setEnvValue("RWA_CLIENT_ID", client.client_id)
     rwaClientId = client.client_id;
     setEnvValue("RWA_CLIENT_SECRET", client.client_secret);
@@ -702,7 +710,7 @@ async function createNativeClient(){
   `;
 
     const client = (await mgmtClient.clients.create(JSON.parse(nativeClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     setEnvValue("NATIVE_CLIENT_ID", client.client_id)
     clients.push(client.client_id);
 
@@ -758,7 +766,7 @@ async function createSpaClient(){
   `;
 
     const client = (await mgmtClient.clients.create(JSON.parse(spaClientTemplate))).data;
-    console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+    console.log(chalk.green(`Created client with ID: ${client.client_id} & Name: ${client.name}`));
     setEnvValue("NON_CONFIDENTIAL_CLIENT_ID", client.client_id)
     clients.push(client.client_id);
     
@@ -775,7 +783,8 @@ async function createMTLSCASignedCertClientWithJARPARJWECBAT(){
   var pksSAR = generateKeyPair();
 
     if(paths === null) { 
-      console.log("Could not create mtls client because certs could not be created"); 
+      console.log(chalk.red("Could not create mtls client because certs could not be created"));
+ 
       return;
     }
     var mTLSCASignedClientWithCBATTemplate = `
@@ -857,7 +866,7 @@ clients.push(client.client_id);
 }
 
 
-async function createResourceServerForNonHRIFlows(){
+async function createNonHRIResourceServer(){
 
   var resourceServerTemplate = `
   {
@@ -885,29 +894,21 @@ async function createResourceServerForNonHRIFlows(){
 
 
   try {
-    const existingRs = await mgmtClient.resourceServers.get({id : "urn:your:api"});
-    console.log("Deleting existing resource server:")
-    await mgmtClient.resourceServers.delete({ id: "urn:your:api"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    console.log(chalk.green(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`));
     setEnvValue("NON_HRI_AUD", rs.identifier)
     nonHRIResourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
   }
   catch(error){
-      if(error.statusCode === 404){
-    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
-    setEnvValue("NON_HRI_AUD", rs.identifier)
-    nonHRIResourceIdentifier = rs.identifier;
-    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
-      }
+    console.log(error);
+    console.log(chalk.red("Error while creating the API with audience: urn:your:api"))
   }
 
 }
 
 
-async function createResourceServer(){
+async function createHRIResourceServer(){
 
   var resourceServerTemplate = `
   {
@@ -941,29 +942,21 @@ async function createResourceServer(){
 
 
   try {
-    const existingRs = await mgmtClient.resourceServers.get({id : "urn:bank:api:hri"});
-    console.log("Deleting existing resource server:")
-    await mgmtClient.resourceServers.delete({ id: "urn:bank:api:hri"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    console.log(chalk.green(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`));
     setEnvValue("AUD", rs.identifier)
     resourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
   }
   catch(error){
-      if(error.statusCode === 404){
-    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
-    setEnvValue("AUD", rs.identifier)
-    resourceIdentifier = rs.identifier;
-    setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
-      }
+    console.log(error);
+    console.log(chalk.red("Error while creating the API with audience: urn:bank:api:hri"))
   }
 
 }
 
 
-async function createJWEAccessTokenResourceServer(){
+async function createHRIResourceServerUsingJWE(){
 
   const keystore = JWK.createKeyStore();
   const key = await keystore.generate("RSA", 4096, { use: "enc", alg: "RSA-OAEP-256" });
@@ -973,8 +966,8 @@ async function createJWEAccessTokenResourceServer(){
 
   var resourceServerTemplate = `
   {
-    "name": "JWE_ENCRYPTED_ACCESS_TOKEN_API",
-    "identifier": "urn:my:api:encrypted_accessToken",
+    "name": "HRI_JWE_ENCRYPTED_ACCESS_TOKEN_API",
+    "identifier": "urn:my:api:hri:encrypted_accessToken",
     "token_lifetime": 86400,
     "token_lifetime_for_web": 7200,
     "skip_consent_for_verifiable_first_party_clients": true,
@@ -1009,24 +1002,17 @@ async function createJWEAccessTokenResourceServer(){
       }  
   }`
   try {
-    const existingRs = await mgmtClient.resourceServers.get({id : "urn:my:api:encrypted_accessToken"});
-    console.log("Deleting existing resource server:")
-    await mgmtClient.resourceServers.delete({ id: "urn:my:api:encrypted_accessToken"});
     const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
+    console.log(chalk.green(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`));
     setEnvValue("JWE_API_AUD", rs.identifier)
     jweAccessTokenResourceIdentifier = rs.identifier;
     setEnvValue("AUD_SCOPES", "read:all_stats upload:stats");
     setEnvValue("JWE_PRIVATE_KEY", JSON.stringify(pemPrivateKey))
+    console.log(chalk.yellowBright("Since your API requires the access tokens are encrypted. Please make sure your API has the private key to decrypt the tokens. You can get the value of the private key from the JWE_PRIVATE_KEY in the .env file"));
   }
   catch(error){
-      if(error.statusCode === 404){
-    const rs = (await mgmtClient.resourceServers.create(JSON.parse(resourceServerTemplate))).data;
-    console.log(`Created API with ID: ${rs.id} & Audience: ${rs.identifier}`);
-    setEnvValue("JWE_API_AUD", rs.identifier)
-    jweAccessTokenResourceIdentifier = rs.identifier;
-    setEnvValue("JWE_PRIVATE_KEY", JSON.stringify(pemPrivateKey))
-      }
+    console.log(error);
+    console.log(chalk.red("Error while creating the HRI with audience: urn:my:api:hri:encrypted_accessToken"));
   }
 
 
@@ -1041,7 +1027,7 @@ async function createPkJWTRSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${resourceIdentifier}`);
+   console.log(chalk.green(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${resourceIdentifier}`));
 
    await mgmtClient.clientGrants.create( {
     "client_id": pkjwtClientId,
@@ -1049,7 +1035,7 @@ async function createPkJWTRSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${jweAccessTokenResourceIdentifier}`);
+   console.log(chalk.green(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${jweAccessTokenResourceIdentifier}`));
 
    await mgmtClient.clientGrants.create( {
     "client_id": pkjwtClientId,
@@ -1057,7 +1043,7 @@ async function createPkJWTRSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${nonHRIResourceIdentifier}`);
+   console.log(chalk.green(`Created client Grant for Client with ID: ${pkjwtClientId} & API: ${nonHRIResourceIdentifier}`));
   
 }
 
@@ -1071,7 +1057,7 @@ async function createRWARSClientGrant(){
    "scope" : ["read:stats", "upload:stats"]
   });
 
-  console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`);
+  console.log(chalk.green(`Created client Grant for Client with ID: ${rwaClientId} & API: ${resourceIdentifier}`));
 
   await mgmtClient.clientGrants.create( {
     "client_id": rwaClientId,
@@ -1079,7 +1065,7 @@ async function createRWARSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${jweAccessTokenResourceIdentifier}`);
+   console.log(chalk.green(`Created client Grant for Client with ID: ${rwaClientId} & API: ${jweAccessTokenResourceIdentifier}`));
 
    await mgmtClient.clientGrants.create( {
     "client_id": rwaClientId,
@@ -1087,7 +1073,7 @@ async function createRWARSClientGrant(){
     "scope" : ["read:stats", "upload:stats"]
    });
 
-   console.log(`Created client Grant for Client with ID: ${rwaClientId} & API: ${nonHRIResourceIdentifier}`);
+   console.log(chalk.green(`Created client Grant for Client with ID: ${rwaClientId} & API: ${nonHRIResourceIdentifier}`));
 
  
 }
@@ -1100,7 +1086,7 @@ async function createClientGrant(clientId, audience, scopeArr){
    "scope" : scopeArr || ["read:stats", "upload:stats"]
   });
 
-  console.log(`Created client Grant for Client with ID: ${clientId} & API: ${resourceIdentifier}`);
+  console.log(chalk.green(`Created client Grant for Client with ID: ${clientId} & API: ${resourceIdentifier}`));
  
 }
 
@@ -1118,13 +1104,13 @@ async function enableUserConnectionForClients(clients,name) {
       });
       
       connection = await mgmtClient.connections.update({ id: connection.id }, { enabled_clients: clientsEnabled });
-      console.log('Database connection updated for all clients!');
+      console.log(chalk.green('Database connection updated for all clients!'));
       return connection;
     }
-    console.log('ERROR!!!!: Connection not found to be enabled');
+    console.log(chalk.red('ERROR!!!!: Connection not found to be enabled'));
 
   } catch (error) {
-    console.error('Error updating user connection for clients:', error.message);
+    console.error(chalk.red('Error updating user connection for clients:', error.message));
   }
 
 }
@@ -1265,6 +1251,9 @@ const customizedConsentTemplate = {
 console.log("Done updating the customized consent prompt for the authorization details!");
 }
 
+async function showImportantMessages(){
+  console.log(chalk.green("After running the bootstrap for the first time or at any time you redo the setup and create a new CA under helpers/MTLS/CA, make sure to add this CA in the proxy such that client certificates created from this CA are trusted!"))
+}
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));

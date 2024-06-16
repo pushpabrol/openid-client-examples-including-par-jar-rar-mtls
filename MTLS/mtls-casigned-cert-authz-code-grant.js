@@ -11,7 +11,7 @@ const CLIENT_ID = process.env.MTLS_CLIENT_ID_CASIGNED;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_CERT_PATH;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_PRIVATEKEY_PATH;
 const CA_PATH=process.env.CA_PATH;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 
 const redirectUri = "http://127.0.0.1:8988";
 import http from "http"
@@ -35,8 +35,7 @@ server.once('listening', () => {
       cert : cert,
       key:key,
       passphrase: passphrase,
-      ca : ca,
-      ciphers: "DEFAULT:@SECLEVEL=0"
+      ca : ca
     });
 
     Issuer[custom.http_options] = () => ({ key, cert, passphrase, ca });

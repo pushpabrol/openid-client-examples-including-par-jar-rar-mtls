@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import {  __dirname } from './helpers.js';
 import { ManagementClient } from 'auth0';
 dotenv.config(`${__dirname}/.env`)
+import chalk from 'chalk'; // Node.js file for colorful logs
 
 // Create a new instance of the ManagementClient
 const auth0 = new ManagementClient({
@@ -68,10 +69,10 @@ const getAllClients = async () => {
     return filteredClients;
   };
 
-  const filterResourceServersByName = (reseourceservers, nameFilters) => {
+  const filterResourceServersByIdentifier = (reseourceservers, identifiers) => {
     const filteredRSs = reseourceservers.filter((rs) => {
-      for (const filter of nameFilters) {
-        if (rs.name.toLowerCase().startsWith(filter.toLowerCase())) {
+      for (const identifier of identifiers) {
+        if (rs.identifier === identifier) {
           return true;
         }
       }
@@ -113,20 +114,20 @@ const getAllClients = async () => {
 
   const printClientNamesAndIds = (clients) => {
     clients.forEach((client) => {
-      console.log(`Client Name: ${client.name}`);
-      console.log(`Client ID: ${client.client_id}`);
-      console.log(`Client Callbacks: ${client.callbacks}`);
-      console.log(`Client Type: ${client.app_type}`);
-      console.log('-------------------');
+      console.log(chalk.green(`Client Name: ${client.name}`));
+      console.log(chalk.green(`Client ID: ${client.client_id}`));
+      console.log(chalk.green(`Client Callbacks: ${client.callbacks}`));
+      console.log(chalk.green(`Client Type: ${client.app_type}`));
+      console.log(chalk.green('-------------------'));
     });
   };
 
-  const printRSNamesAndIds = (rss) => {
+  const printRSDetails = (rss) => {
     rss.forEach((rs) => {
-      console.log(`RS Name: ${rs.name}`);
-      console.log(`RS ID: ${rs.id}`);
-      console.log(`RS Audience: ${rs.identifier}`);
-      console.log('-------------------');
+      console.log(chalk.green(`RS Name: ${rs.name}`));
+      console.log(chalk.green(`RS ID: ${rs.id}`));
+      console.log(chalk.green(`RS Audience: ${rs.identifier}`));
+      console.log(chalk.green('-------------------'));
     });
   };
 
@@ -139,7 +140,7 @@ const deleteClients = async (clients) => {
 
     for (const client of clients) {
       await auth0.clients.delete({ client_id: client.client_id });
-      console.log(`Deleted client with ID: ${client.client_id}`);
+      console.log(chalk.green(`Deleted client with ID: ${client.client_id}`));
 
       // Delay between each deletion to handle rate limiting
       await delay(200); // Adjust the delay time as needed
@@ -154,7 +155,7 @@ const deleteResourceServers = async (rss) => {
   
       for (const rs of rss) {
         await auth0.resourceServers.delete({ id: rs.id });
-        console.log(`Deleted RS with ID: ${rs.id}`);
+        console.log(chalk.green(`Deleted RS with ID: ${rs.id}`));
   
         // Delay between each deletion to handle rate limiting
         await delay(200); // Adjust the delay time as needed
@@ -170,10 +171,10 @@ const deleteResourceServers = async (rss) => {
  * 
  */
 var clients = await getAllClients();
-console.log("In this Auth0 tenant - Total number of clients ", clients.length);
+console.log(chalk.green("In this Auth0 tenant - Total number of clients ", clients.length));
 var reseourceservers = await getAllResourceServers();
-console.log("In this Auth0 tenant - Total number of Resource Servers ", reseourceservers.length);
-const rsFilters = ["MY_API_"];
+console.log(chalk.green("In this Auth0 tenant - Total number of Resource Servers ", reseourceservers.length));
+const rsIdentifiers = ["urn:your:api","urn:bank:api:hri","urn:my:api:hri:encrypted_accessToken"];
 const clientFilters = ["MTLS_", "Native_Device_FLow_Test-","RWA_CLIENT_","Native_Device_FLow_Test","SPA_Test_Client","PKJWT_CLIENT","JAR_CLIENT","JARPKJWT_CLIENT"];
 
 var filteredClients = filterClientsByName(clients,clientFilters);
@@ -181,17 +182,16 @@ var filteredClients = filterClientsByName(clients,clientFilters);
 if(filteredClients.length > 0)
 {
 printClientNamesAndIds(filteredClients)
-console.log(`Found ${filteredClients.length} clients that would be deleted`);
+console.log(chalk.green(`Found ${filteredClients.length} clients that would be deleted`));
 deleteClients(filteredClients);
-} else console.log(`No clients with names matching the filters found!!!`)
-
-var filteredRSs = filterResourceServersByName(reseourceservers,rsFilters);
+} else console.log(chalk.yellow(`No clients with names matching the filters found!!!`))
+var filteredRSs = filterResourceServersByIdentifier(reseourceservers,rsIdentifiers);
 if(filteredRSs.length > 0)
 {
-printRSNamesAndIds(filteredRSs);
-console.log(`Found ${filteredRSs.length} APIs that would be deleted`);
+printRSDetails(filteredRSs);
+console.log(chalk.green(`Found ${filteredRSs.length} API(s) that would be deleted`));
 deleteResourceServers(filteredRSs)
-} else console.log("No resource servers matching the filters found!!!")
+} else console.log(chalk.green("No resource servers matching the filters found!!!"))
 
 
 

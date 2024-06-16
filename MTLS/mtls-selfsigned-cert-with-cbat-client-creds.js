@@ -11,7 +11,7 @@ import axios from 'axios';
 const CLIENT_ID = process.env.MTLS_CLIENT_ID_SELFSIGNED_CBAT;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_CERT_PATH_CBAT;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_SELFSIGNED_PRIVATEKEY_PATH_CBAT;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 
 (async () => {
 

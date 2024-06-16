@@ -3,11 +3,10 @@ import fs from 'fs';
 import forge from 'node-forge';
 import path from 'path';
 import {  setEnvValue } from '../helpers.js';
-
+import chalk from 'chalk'; // Node.js file for colorful logs
 const __filename = fileURLToPath(import.meta.url);
 // First find out the __dirname, then resolve to one higher level in the dir tree
 export const __dirname = path.resolve(path.dirname(__filename), "../../");
-console.log(__dirname);
 
 const createGetCACerts =  () => {
     if (fs.existsSync(`${__dirname}/helpers/MTLS/CA/ca.crt`)) {
@@ -83,7 +82,7 @@ const createGetCACerts =  () => {
     fs.writeFileSync(`${__dirname}/helpers/MTLS/CA/ca.crt`, forge.pki.certificateToPem(caCert));
     fs.writeFileSync(`${__dirname}/helpers/MTLS/CA/ca.key`, forge.pki.privateKeyToPem(caKeys.privateKey));
     setEnvValue("CA_PATH", `${__dirname}/helpers/MTLS/CA/ca.crt`);
-    console.log('CA certificate and key generated, saved.');
+    console.log(chalk.green('CA certificate and key generated, saved.'));
     return {
         caCertificatePem: fs.readFileSync(`${__dirname}/helpers/MTLS/CA/ca.crt`, 'utf8'),
         caPrivateKeyPem: fs.readFileSync(`${__dirname}/helpers/MTLS/CA/ca.key`, 'utf8')
@@ -144,7 +143,7 @@ export const createCASignedClientCert = (commonName) => {
         clientCertificate.setIssuer(caCertificate.subject.attributes);
 
         // Sign the client certificate with the CA private key
-        clientCertificate.sign(caPrivateKey);
+        clientCertificate.sign(caPrivateKey,forge.md.sha256.create());
 
         // Convert the client certificate and private key to PEM format
         const clientCertificatePem = forge.pki.certificateToPem(clientCertificate);
@@ -157,7 +156,7 @@ export const createCASignedClientCert = (commonName) => {
         fs.writeFileSync(clientCertificatePath, clientCertificatePem);
         fs.writeFileSync(clientPrivateKeyPath, clientPrivateKeyPem);
 
-        console.log(`Client certificate and private key saved in directory: ${commonName}`);
+        console.log(chalk.green(`Client certificate and private key saved in directory: ${commonName}`));
 
         // Create a PFX (PKCS#12) file with a password
         const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
@@ -170,10 +169,10 @@ export const createCASignedClientCert = (commonName) => {
         const pfxPath = path.join(clientDir, 'client-certificate.pfx');
         fs.writeFileSync(pfxPath, p12Der, 'binary');
 
-        console.log(`Client certificate PFX file saved with password "Auth0Dem0" in directory: ${commonName}`);
+        console.log(chalk.green(`Client certificate PFX file saved with password "Auth0Dem0" in directory: ${commonName}`));
         return { clientCertificatePath, clientPrivateKeyPath, pfxPath }
     } else {
-        console.log(`Certificate folder for commonName - ${commonName} alredy exists. use a new one!`);
+        console.log(chalk.yellow(`Certificate folder for commonName - ${commonName} alredy exists. use a new one!`));
         return null;
     }
 };
@@ -262,7 +261,7 @@ export const createSelfSignedCerts = (commonName) => {
         fs.writeFileSync(clientCertificatePath, clientCertificatePem);
         fs.writeFileSync(clientPrivateKeyPath, clientPrivateKeyPem);
 
-        console.log(`Self-signed client certificate and private key saved in directory: ${commonName}`);
+        console.log(chalk.green(`Self-signed client certificate and private key saved in directory: ${commonName}`));
 
         // Create a PFX (PKCS#12) file with a password
         const p12Asn1 = forge.pkcs12.toPkcs12Asn1(
@@ -274,12 +273,12 @@ export const createSelfSignedCerts = (commonName) => {
         // Save the PFX file to disk in the client directory
         const pfxPath = path.join(clientDir, 'client-certificate.pfx');
         fs.writeFileSync(pfxPath, p12Der, 'binary');
-        console.log(`Self-signed client certificate PFX file saved with password "Auth0Dem0" in directory: ${commonName}`);
+        console.log(chalk.green(`Self-signed client certificate PFX file saved with password "Auth0Dem0" in directory: ${commonName}`));
         return { clientCertificatePath, clientPrivateKeyPath, pfxPath }
         
     }
     else {
-        console.log(`Certificate folder for Self Signed Cert with commonName - ${commonName} alredy exists. use a new one!`);
+        console.log(chalk.yellow(`Certificate folder for Self Signed Cert with commonName - ${commonName} alredy exists. use a new one!`));
         return null;
     }
 }

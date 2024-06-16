@@ -10,7 +10,6 @@ const CLIENT_ID = process.env.MTLS_CLIENT_ID_CASIGNED;
 const CERT_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_CERT_PATH;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_PRIVATEKEY_PATH;
 const CA_PATH=process.env.CA_PATH;
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
 
 (async () => {
 
@@ -32,7 +31,7 @@ await custom.setHttpOptionsDefaults({
   Issuer[custom.http_options] = () => ({ key, cert, passphrase });
 
   const issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);
-  console.log('Discovered issuer %s %O', issuer.issuer, issuer.metadata);
+  //console.log('Discovered issuer %s %O', issuer.issuer, issuer.metadata);
 
   issuer.log = console;
 const mtlsEndpoints = issuer.mtls_endpoint_aliases;

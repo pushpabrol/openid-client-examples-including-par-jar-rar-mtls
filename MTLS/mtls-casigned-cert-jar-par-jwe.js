@@ -17,7 +17,7 @@ const { JwksClient } = pkg1
 import pkg2 from 'jsonwebtoken';
 const { verify } = pkg2;
 
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 
 
 const CLIENT_ID = process.env.MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_ID;
@@ -93,7 +93,7 @@ server.once('listening', () => {
       console.log("Request Object (JAR):", requestObject);
 
       client[custom.http_options] = () => ({ key, cert, passphrase, ca });
-      
+
       // Send the request object to the PAR endpoint
       const parResponse = await client.pushedAuthorizationRequest({
         request: requestObject

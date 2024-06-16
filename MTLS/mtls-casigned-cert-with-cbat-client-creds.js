@@ -13,7 +13,7 @@ const CERT_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_CERT_PATH_CBAT;
 const KEY_PATH=process.env.MTLS_CLIENT_ID_CASIGNED_PRIVATEKEY_PATH_CBAT;
 const CA_PATH=process.env.CA_PATH;
 
-process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
+
 
 (async () => {
 console.log(process.env);
