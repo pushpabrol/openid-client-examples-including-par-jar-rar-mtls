@@ -54,6 +54,7 @@ For setup for MTLS and custom domain with self-managed certificates in Auth0, se
 - AUTHZ_CODE + MTLS with self-signed cert
 - Client Credentials Flow + MTLS with self-signed cert
 - Client Credentials Flow + MTLS with self-signed cert + Client Bound Access Token
+- MTLS + JAR + PAR + JWE + CBAT + Calling RS that will decrypt token + verify CBAT 
 
 ### [JWE](https://auth0.com/docs/secure/highly-regulated-identity#protect-sensitive-data-in-access-tokens) JSON Web Encryption for access tokens
 (Auth0 issued access token is JWE, Resource Server in Auth0 holds the public key to encrypt the access token)
