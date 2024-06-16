@@ -13,6 +13,7 @@ const createGetCACerts =  () => {
     if (fs.existsSync(`${__dirname}/helpers/MTLS/CA/ca.crt`)) {
         const caCertificatePem = fs.readFileSync(`${__dirname}/helpers/MTLS/CA/ca.crt`, 'utf8'); // Replace with your CA certificate path
         const caPrivateKeyPem = fs.readFileSync(`${__dirname}/helpers/MTLS/CA/ca.key`, 'utf8'); // Replace with your CA private key path
+        setEnvValue("CA_PATH", `${__dirname}/helpers/MTLS/CA/ca.crt`);
         return { caCertificatePem, caPrivateKeyPem };
     }
 

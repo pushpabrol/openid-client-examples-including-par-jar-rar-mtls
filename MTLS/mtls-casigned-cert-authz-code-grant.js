@@ -35,7 +35,8 @@ server.once('listening', () => {
       cert : cert,
       key:key,
       passphrase: passphrase,
-      ca : ca
+      ca : ca,
+      ciphers: "DEFAULT:@SECLEVEL=0"
     });
 
     Issuer[custom.http_options] = () => ({ key, cert, passphrase, ca });

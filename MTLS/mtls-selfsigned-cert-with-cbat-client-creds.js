@@ -4,6 +4,8 @@ dotenv.config()
 import  open from "open";
 import { Issuer, generators, custom } from 'openid-client';
 import * as fs from 'fs';
+import https from 'https';
+import axios from 'axios';
 
 
 const CLIENT_ID = process.env.MTLS_CLIENT_ID_SELFSIGNED_CBAT;
@@ -28,7 +30,6 @@ await custom.setHttpOptionsDefaults({
   // Specify app arguments
   Issuer[custom.http_options] = () => ({ key, cert, passphrase });
 
-  //const issuer = await Issuer.discover(`${process.env.AUTH0_MTLS_ISSUER_URL}`);
   const issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);;
   issuer.log = console;
 const mtlsEndpoints = issuer.mtls_endpoint_aliases;
@@ -46,13 +47,37 @@ if (mtlsEndpoints) {
 
   client[custom.http_options] = () => ({ key, cert, passphrase });
   
-  const token = await client.grant({
+  const tokenSet = await client.grant({
       grant_type: "client_credentials",
       audience: process.env.AUD,
       scope: process.env.AUD_SCOPES,
   });
 
-  console.log(token);
+  console.log(tokenSet);
+
+  const httpsAgent = new https.Agent({
+    cert,
+    key,
+  });
+
+let config = {
+  method: 'get',
+  maxBodyLength: Infinity,
+  url: process.env.RESOURCE_SERVER_API_FOR_TOKEN_BINDING_TESTING,
+  headers: { 
+    'Authorization': `Bearer ${tokenSet.access_token}`
+  }, httpsAgent 
+};
+
+axios.request(config)
+.then((response) => {
+  console.log("Recieved API Response");
+
+  console.log(JSON.stringify(response.data));
+})
+.catch((error) => {
+  console.log(error);
+});
 
 
 })();

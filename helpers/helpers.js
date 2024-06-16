@@ -32,7 +32,7 @@ export const generateKeyPair = () => {
   return { "privateKey" : pvK, "publicKey" : pubK};
 }
 
-export const setEnvValue = (key, value) => {
+export const setEnvValueOld = (key, value) => {
 
   // read file from hdd & split if from a linebreak to a array
   const ENV_VARS = fs.readFileSync(`${__dirname}/.env`, "utf8").split(os.EOL);
@@ -50,6 +50,38 @@ export const setEnvValue = (key, value) => {
   fs.writeFileSync(`${__dirname}/.env`, ENV_VARS.join(os.EOL));
 
 }
+
+export const setEnvValue = (key, value) => {
+  // Read file from the filesystem and split it by line breaks into an array
+  const envFilePath = `${__dirname}/.env`;
+  let envVars = fs.readFileSync(envFilePath, "utf8").split(os.EOL);
+
+  // Find the index of the line containing the key
+  const targetIndex = envVars.findIndex((line) => line.startsWith(`${key}=`));
+
+  // Check if the value contains newlines and should be stringified
+  const needsStringify = /\r|\n/.exec(value);
+
+  if (targetIndex !== -1) {
+    // If the key exists, replace the line with the new key=value
+    if (needsStringify) {
+      envVars[targetIndex] = `${key}="${value.replace(/"/g, '\\"')}"`;
+    } else {
+      envVars[targetIndex] = `${key}=${value}`;
+    }
+  } else {
+    // If the key does not exist, append the new key=value pair
+    if (needsStringify) {
+      envVars.push(`${key}="${value.replace(/"/g, '\\"')}"`);
+    } else {
+      envVars.push(`${key}=${value}`);
+    }
+  }
+
+  // Write the updated content back to the .env file
+  fs.writeFileSync(envFilePath, envVars.join(os.EOL));
+};
+
 
 export const askQuestion = (query) => {
   const rl = readline.createInterface({

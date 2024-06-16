@@ -58,7 +58,6 @@ server.once('listening', () => {
         "remittanceInformationUnstructured": "Ref Number Merchant"
       }])
     });
-    console.log(req);
 
     console.log(req);
 

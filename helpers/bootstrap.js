@@ -1,138 +1,148 @@
-import dotenv from 'dotenv'
-import pkg from 'node-jose';
-const { JWK } = pkg;
+// Import required modules
+import dotenv from 'dotenv'; // Load environment variables from a .env file into process.env
+import pkg from 'node-jose'; // Import the node-jose package for handling JWK (JSON Web Key) operations
+const { JWK } = pkg; // Destructure JWK from node-jose
 
+// Import custom helper functions and other dependencies
 import { random, setEnvValue, generateKeyPair, __dirname } from './helpers.js';
-import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.js'
-import { ManagementClient} from 'auth0';
-import fs from 'fs';
+import { createCASignedClientCert, createSelfSignedCerts } from './MTLS/helpers.js';
+import { ManagementClient } from 'auth0'; // Auth0 Management API client
+import fs from 'fs'; // Node.js file system module
 
-dotenv.config(`${__dirname}/.env`)
+// Load environment variables from .env file
+dotenv.config(`${__dirname}/.env`);
 
-
+// Initialize Auth0 Management Client with environment variables
 var mgmtClient = new ManagementClient({
-  domain: process.env.AUTH0_DOMAIN,
-  clientId: process.env.MGMT_CLIENT_ID,
-  clientSecret: process.env.MGMT_CLIENT_SECRET
+  domain: process.env.AUTH0_DOMAIN, // Auth0 domain
+  clientId: process.env.MGMT_CLIENT_ID, // Client ID for management API
+  clientSecret: process.env.MGMT_CLIENT_SECRET // Client secret for management API
 });
 
-//default
+// Default callback URL
 var callbackUrl = "http://127.0.0.1:8988";
 
+// Define variables for client IDs and resource identifiers
 var pkjwtClientId = "";
-var resourceIdentifier = process.env.AUD  || "";
-var nonHRIResourceIdentifier = process.env.NON_HRI_AUD || "";
-var jweAccessTokenResourceIdentifier = process.env.JWE_API_AUD || "";
+var resourceIdentifier = process.env.AUD || ""; // Audience for resource server
+var nonHRIResourceIdentifier = process.env.NON_HRI_AUD || ""; // Audience for non-HRI resource server
+var jweAccessTokenResourceIdentifier = process.env.JWE_API_AUD || ""; // Audience for JWE access token resource server
 var rwaClientId = "";
-var clients = [];
+var clients = []; // Array to store created client IDs
 
-(async() => {
+// Asynchronous function to create and configure Auth0 clients and resource servers
+(async () => {
     try {
-        await createResourceServerForNonHRIFlows();
-        await createResourceServer();
-        await createJWEAccessTokenResourceServer();
+        // Create various resource servers and clients
+        await createResourceServerForNonHRIFlows(); // Create resource server for non-HRI flows
+        await createResourceServer(); // Create main resource server
+        await createJWEAccessTokenResourceServer(); // Create resource server for JWE access tokens
+
+        // Create MTLS clients with self-signed and CA-signed certificates
         await createMTLSSelfSignedCertClient();
-        await createMTLSSelfSignedCertClientWithCBAT();
-        await wait(3000);
+        await createMTLSSelfSignedCertClientWithCBAT(); // CBAT = Certificate Binding Access Token
+        await wait(3000); // Wait for 3 seconds before next operation
         await createMTLSCASignedCertClient();
         await createMTLSCASignedCertClientWithCBAT();
+        await createMTLSCASignedCertClientWithJARPARJWECBAT(); // JAR = JWT Assertion Response, PAR = Pushed Authorization Request, JWE = JSON Web Encryption, CBAT = Certificate Binding Access Token
         await createPrivateKeyJwtClient();
-        await wait(3000);
+        await wait(3000); // Wait for 3 seconds before next operation
         await createNativeClient();
         await createSpaClient();
         await createRegularWebAppClient();
-        await wait(3000);
-        await createRWARSClientGrant();
-        await createPkJWTRSClientGrant();
-        await wait(3000);
+        await wait(3000); // Wait for 3 seconds before next operation
+        await createRWARSClientGrant(); // Create client grant for Regular Web App and Resource Server
+        await createPkJWTRSClientGrant(); // Create client grant for PKJWT and Resource Server
+        await wait(3000); // Wait for 3 seconds before next operation
         await createJARClientClientSecret();
         await createJARClientWithPrivateKeyJwtAuth();
-        await enableUserConnectionForClients(clients,process.env.CONNECTION_NAME);
-        await setCustomizedConsentPromptToRenderAuthorizationDetails();
-         
+        await enableUserConnectionForClients(clients, process.env.CONNECTION_NAME); // Enable user connection for all created clients
+        await setCustomizedConsentPromptToRenderAuthorizationDetails(); // Set customized consent prompt
         
     } catch (error) {
-        console.log(error);
-        console.log(error.originalError);
+        console.log(error); // Log the error
+        console.log(error.originalError); // Log the original error
     }
-
 })();
 
-async function createMTLSSelfSignedCertClient(){
+// Function to create a client with MTLS using self-signed certificates
+async function createMTLSSelfSignedCertClient() {
+  const clientName = `MTLS_AUTHZ_CODE_Self_Signed_Cert_${random()}`; // Generate a unique client name
+  var paths = createSelfSignedCerts(clientName); // Create self-signed certificates for the client
 
-  const clientName = `MTLS_AUTHZ_CODE_Self_Signed_Cert_${random()}`;
+  if (paths === null) {
+    console.log("Could not create mtls client because certs could not be created");
+    return;
+  }
 
-  var paths = createSelfSignedCerts(clientName);
-
-    if(paths === null) { 
-      console.log("Could not create mtls client because certs could not be created"); 
-      return;
-    }
-    var mTLSSelfSignedClientTemplate = `
+  var mTLSSelfSignedClientTemplate = `
     {
       "is_token_endpoint_ip_header_trusted": false,
-         "name": "${clientName}",
-         "is_first_party": true,
-         "oidc_conformant": true,
-         "sso_disabled": false,
-         "cross_origin_auth": false,
-         "refresh_token": {
-           "expiration_type": "non-expiring",
-           "leeway": 0,
-           "infinite_token_lifetime": true,
-           "infinite_idle_token_lifetime": true,
-           "token_lifetime": 31557600,
-           "idle_token_lifetime": 2592000,
-           "rotation_type": "non-rotating"
-         },
-         "callbacks": [
-          "${callbackUrl}", "https://jwt.io", "http://localhost:3750/resume-transaction"
-         ],
-         "native_social_login": {
-           "apple": {
-             "enabled": false
-           },
-           "facebook": {
-             "enabled": false
-           }
-         },
-         "jwt_configuration": {
-           "alg": "RS256",
-           "lifetime_in_seconds": 36000,
-           "secret_encoded": false
-         },
-         "client_aliases": [],
-         "app_type": "regular_web",
-         "grant_types": [
-           "authorization_code",
-           "implicit",
-           "refresh_token",
-           "client_credentials"
-         ],
-         "client_authentication_methods": {
-               "self_signed_tls_client_auth": {
-           "credentials": [{ 
-             "name": "ss_cert", 
-             "credential_type": "x509_cert", 
-             "pem": ${JSON.stringify(fs.readFileSync(paths.clientCertificatePath).toString('utf8'))}
-           }]
-         }
-         }
-       }
-    
-`;
+      "name": "${clientName}",
+      "is_first_party": true,
+      "oidc_conformant": true,
+      "sso_disabled": false,
+      "cross_origin_auth": false,
+      "refresh_token": {
+        "expiration_type": "non-expiring",
+        "leeway": 0,
+        "infinite_token_lifetime": true,
+        "infinite_idle_token_lifetime": true,
+        "token_lifetime": 31557600,
+        "idle_token_lifetime": 2592000,
+        "rotation_type": "non-rotating"
+      },
+      "callbacks": [
+        "${callbackUrl}", "https://jwt.io", "http://localhost:3750/resume-transaction"
+      ],
+      "native_social_login": {
+        "apple": {
+          "enabled": false
+        },
+        "facebook": {
+          "enabled": false
+        }
+      },
+      "jwt_configuration": {
+        "alg": "RS256",
+        "lifetime_in_seconds": 36000,
+        "secret_encoded": false
+      },
+      "client_aliases": [],
+      "app_type": "regular_web",
+      "grant_types": [
+        "authorization_code",
+        "implicit",
+        "refresh_token",
+        "client_credentials"
+      ],
+      "client_authentication_methods": {
+        "self_signed_tls_client_auth": {
+          "credentials": [{
+            "name": "ss_cert",
+            "credential_type": "x509_cert",
+            "pem": ${JSON.stringify(fs.readFileSync(paths.clientCertificatePath).toString('utf8'))}
+          }]
+        }
+      }
+    }
+  `;
 
-const client = (await mgmtClient.clients.create(JSON.parse(mTLSSelfSignedClientTemplate))).data;
-console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED", client.client_id)
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_REDIRECT_URI", callbackUrl);
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_CERT_PATH", paths.clientCertificatePath)
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PRIVATEKEY_PATH", paths.clientPrivateKeyPath)
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PFX_PATH", paths.pfxPath)
-setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PFX_PWD", "Auth0Dem0");
-await createClientGrant(client.client_id,process.env.AUD,process.env.AUD_SCOPES.split(" "))
-clients.push(client.client_id);
+  // Create the client using the Auth0 Management API
+  const client = (await mgmtClient.clients.create(JSON.parse(mTLSSelfSignedClientTemplate))).data;
+  console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
 
+  // Store client details in environment variables
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED", client.client_id);
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_REDIRECT_URI", callbackUrl);
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_CERT_PATH", paths.clientCertificatePath);
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PRIVATEKEY_PATH", paths.clientPrivateKeyPath);
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PFX_PATH", paths.pfxPath);
+  setEnvValue("MTLS_CLIENT_ID_SELFSIGNED_PFX_PWD", "Auth0Dem0");
+
+  // Create client grant for the resource server
+  await createClientGrant(client.client_id, process.env.AUD, process.env.AUD_SCOPES.split(" "));
+  clients.push(client.client_id); // Add client ID to the list of clients
 }
 
 
@@ -756,6 +766,95 @@ async function createSpaClient(){
 
 }
 
+async function createMTLSCASignedCertClientWithJARPARJWECBAT(){
+
+  const clientName = `MTLS_AUTHZ_CODE_CASigned_WITH_CBAT_${random()}`;
+
+  var paths = createCASignedClientCert(clientName);
+
+  var pksSAR = generateKeyPair();
+
+    if(paths === null) { 
+      console.log("Could not create mtls client because certs could not be created"); 
+      return;
+    }
+    var mTLSCASignedClientWithCBATTemplate = `
+    {
+      "is_token_endpoint_ip_header_trusted": false,
+         "name": "${clientName}",
+         "is_first_party": true,
+         "oidc_conformant": true,
+         "sso_disabled": false,
+         "cross_origin_auth": false,
+         "refresh_token": {
+           "expiration_type": "non-expiring",
+           "leeway": 0,
+           "infinite_token_lifetime": true,
+           "infinite_idle_token_lifetime": true,
+           "token_lifetime": 31557600,
+           "idle_token_lifetime": 2592000,
+           "rotation_type": "non-rotating"
+         },
+         "callbacks": [
+          "${callbackUrl}", "https://jwt.io", "http://localhost:3750/resume-transaction"
+         ],
+         "native_social_login": {
+           "apple": {
+             "enabled": false
+           },
+           "facebook": {
+             "enabled": false
+           }
+         },
+         "jwt_configuration": {
+           "alg": "RS256",
+           "lifetime_in_seconds": 36000,
+           "secret_encoded": false
+         },
+         "client_aliases": [],
+         "app_type": "regular_web",
+         "grant_types": [
+           "authorization_code",
+           "implicit",
+           "refresh_token",
+           "client_credentials"
+         ],
+         "client_authentication_methods": {
+               "tls_client_auth": {
+           "credentials": [{ 
+             "name": "client_with_token_binding", 
+             "credential_type": "cert_subject_dn", 
+             "pem": ${JSON.stringify(fs.readFileSync(paths.clientCertificatePath).toString('utf8'))}
+           }]
+         }
+         },
+        "signed_request_object": {
+        "credentials": [
+          {
+            "name": "keySAR",
+            "credential_type": "public_key",
+            "pem": ${JSON.stringify(pksSAR.publicKey)}
+          }
+        ]
+    }
+
+       }
+    
+`;
+
+const client = (await mgmtClient.clients.create(JSON.parse(mTLSCASignedClientWithCBATTemplate))).data;
+console.log(`Created client with ID: ${client.client_id} & Name: ${client.name}`);
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_ID", client.client_id)
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_REDIRECT_URI", callbackUrl);
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_CERT_PATH", paths.clientCertificatePath)
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_PRIVATEKEY", paths.clientPrivateKeyPath)
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_PFX_PATH", paths.pfxPath)
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_PFX_PWD", "Auth0Dem0");
+setEnvValue("MTLS_CLIENT_CASIGNED_JAR_PAR_JWE_CBAT_FORJAR_SAR_PVT_KEY", JSON.stringify(pksSAR.privateKey));
+//await createClientGrant(client.client_id,process.env.JWE_API_AUD,process.env.AUD_SCOPES.split(" "))
+clients.push(client.client_id);
+
+}
 
 
 async function createResourceServerForNonHRIFlows(){

@@ -28,7 +28,6 @@ await custom.setHttpOptionsDefaults({
   // Specify app arguments
   Issuer[custom.http_options] = () => ({ key, cert, passphrase });
 
-  //const issuer = await Issuer.discover(`${process.env.AUTH0_MTLS_ISSUER_URL}`);
   const issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);;
   issuer.log = console;
 const mtlsEndpoints = issuer.mtls_endpoint_aliases;

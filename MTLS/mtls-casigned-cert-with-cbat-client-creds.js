@@ -35,7 +35,6 @@ await custom.setHttpOptionsDefaults({
   // Specify app arguments
   Issuer[custom.http_options] = () => ({ key, cert, passphrase });
 
-  //const issuer = await Issuer.discover(`${process.env.AUTH0_MTLS_ISSUER_URL}`);
   const issuer = await Issuer.discover(`https://${process.env.DOMAIN}`);;
     issuer.log = console;
   const mtlsEndpoints = issuer.mtls_endpoint_aliases;
@@ -72,7 +71,7 @@ await custom.setHttpOptionsDefaults({
 let config = {
   method: 'get',
   maxBodyLength: Infinity,
-  url: 'https://resource.desmaximus.com/mtls/protected',
+  url: process.env.RESOURCE_SERVER_API_FOR_TOKEN_BINDING_TESTING,
   headers: { 
     'Authorization': `Bearer ${tokenSet.access_token}`
   }, httpsAgent 

@@ -122,7 +122,7 @@ const client = new issuer.Client({
         let config = {
           method: 'get',
           maxBodyLength: Infinity,
-          url: 'https://resource.desmaximus.com/mtls/protected',
+          url: process.env.RESOURCE_SERVER_API_FOR_TOKEN_BINDING_TESTING,
           headers: { 
             'Authorization': `Bearer ${tokenSet.access_token}`
           }, httpsAgent 
