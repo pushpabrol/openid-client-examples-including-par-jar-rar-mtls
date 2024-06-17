@@ -1252,7 +1252,7 @@ console.log("Done updating the customized consent prompt for the authorization d
 }
 
 async function showImportantMessages(){
-  console.log(chalk.green("After running the bootstrap for the first time or at any time you redo the setup and create a new CA under helpers/MTLS/CA, make sure to add this CA in the proxy such that client certificates created from this CA are trusted!"))
+  console.log(chalk.green("After running the bootstrap for the first time or at any time you redo the setup and create a new CA under helpers/MTLS/CA, make sure to add this CA in the proxy such that client certificates created from this CA can be trusted!"))
 }
 
 function wait(ms) {

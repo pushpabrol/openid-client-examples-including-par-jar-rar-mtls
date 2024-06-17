@@ -99,6 +99,9 @@ For setup for MTLS and custom domain with self-managed certificates in Auth0, se
         NON_HRI_AUD=urn:your:api # audience name that you would want to use for the non HRI API (this does not need to exist in auth0 as the bootstrapping process will create it )
         RESOURCE_SERVER_API_FOR_TOKEN_BINDING_TESTING=https://api.yourdomain.com/mtls/protected #advanced - this is only needed for API Testing
         RESOURCE_SERVER_API_FOR_JWE_TOKEN_BINDING_TESTING=https://api.yourdomain.com/mtls/protected/jwe #advanced - this only needed for API testing
+        NODE_TLS_REJECT_UNAUTHORIZED=0 # this is set to avoid node throwing errors about untrusted CA issued certs, specially behind a proxy in corporate environments!
+        #NODE_EXTRA_CA_CERTS="./helpers/MTLS/CA/ca.crt" # (full path to the CA cert)this might help but if you are behind a corporate f/w, but if it eve drops then it wont work!
+
      ```
 
 
